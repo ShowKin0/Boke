@@ -468,7 +468,7 @@ body {
   <button class="nav-item" data-section="articles">📝 文章</button>
   <button class="nav-item" data-section="updates">💬 动态</button>
   <button class="nav-item" data-section="explore">🔍 探索</button>
-  <a href="javascript:void(0)" class="nav-item admin-link" style="text-decoration:none;">⚙️</a>
+  <a href="/admin.html" class="nav-item" style="text-decoration:none;" target="_blank">⚙️</a>
   <div class="nav-indicator" id="indicatorTop"></div>
 </nav>
 
@@ -477,7 +477,7 @@ body {
   <button class="nav-item" data-section="articles">📝</button>
   <button class="nav-item" data-section="updates">💬</button>
   <button class="nav-item" data-section="explore">🔍</button>
-  <a href="javascript:void(0)" class="nav-item admin-link" style="text-decoration:none;">⚙️</a>
+  <a href="/admin.html" class="nav-item" style="text-decoration:none;" target="_blank">⚙️</a>
   <div class="nav-indicator" id="indicatorLeft"></div>
 </nav>
 
@@ -717,20 +717,6 @@ window.addEventListener('scroll', () => {
 
 window.addEventListener('resize', updateActiveSection);
 setTimeout(() => { updateNavbar(); }, 100);
-
-// 管理后台链接 — 支持服务端和本地两种方式
-document.querySelectorAll('.admin-link').forEach(el => {
-  el.addEventListener('click', () => {
-    const base = window.location.origin;
-    const adminUrl = base + '/admin.html';
-    if (window.location.protocol === 'file:') {
-      // 直接打开本地文件（无需服务端，离线模式）
-      window.open('admin.html', '_blank');
-    } else {
-      window.open(adminUrl, '_blank');
-    }
-  });
-});
 
 navItemsAll.forEach(item => {
   item.addEventListener('click', () => {
