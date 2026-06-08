@@ -1,0 +1,80 @@
+<h2>个人博客网站 — 整体布局方案</h2>
+<p class="subtitle">你的个人博客将是一个全屏单页网站，以下是页面结构和导航逻辑</p>
+
+<div class="section">
+  <h3>📐 页面结构（纵向滚动）</h3>
+  <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+    <div style="background: rgba(255,182,193,0.3); border: 2px solid #ffb0c0; border-radius: 10px; padding: 20px; text-align: center;">
+      <strong>🏠 首页 (Home)</strong><br>
+      <span style="font-size: 0.9em; color: #888;">时钟 · 最新文章 · 最新动态 · 音乐播放器</span>
+    </div>
+    <div style="text-align: center; color: #ffb0c0;">↓ 下滑</div>
+    <div style="background: rgba(173,216,230,0.3); border: 2px solid #87ceeb; border-radius: 10px; padding: 20px; text-align: center;">
+      <strong>📝 文章 (Articles)</strong><br>
+      <span style="font-size: 0.9em; color: #888;">文章列表/卡片区</span>
+    </div>
+    <div style="text-align: center; color: #87ceeb;">↓ 下滑</div>
+    <div style="background: rgba(255,182,193,0.3); border: 2px solid #ffb0c0; border-radius: 10px; padding: 20px; text-align: center;">
+      <strong>💬 动态 (Updates)</strong><br>
+      <span style="font-size: 0.9em; color: #888;">生活记录时间线</span>
+    </div>
+    <div style="text-align: center; color: #ffb0c0;">↓ 下滑</div>
+    <div style="background: rgba(173,216,230,0.3); border: 2px solid #87ceeb; border-radius: 10px; padding: 20px; text-align: center;">
+      <strong>🔍 探索 (Explore)</strong><br>
+      <span style="font-size: 0.9em; color: #888;">网站推荐 · 源码 · 学习视频</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>🧭 导航栏行为</h3>
+  <div style="display: flex; gap: 20px; margin-top: 12px; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 200px; background: rgba(255,255,255,0.5); border-radius: 10px; padding: 15px; border: 1px solid #e0e0e0;">
+      <div style="font-weight: bold; color: #ff8fa0;">① 在首页顶部时</div>
+      <div class="mock-nav" style="margin-top: 8px;">🏠 首页  📝 文章  💬 动态  🔍 探索</div>
+      <p style="font-size: 0.85em; color: #666; margin-top: 8px;">导航栏水平固定在顶部，毛玻璃效果背景</p>
+    </div>
+    <div style="flex: 1; min-width: 200px; background: rgba(255,255,255,0.5); border-radius: 10px; padding: 15px; border: 1px solid #e0e0e0;">
+      <div style="font-weight: bold; color: #87ceeb;">② 滚动到其他区域时</div>
+      <div style="display: flex; gap: 4px; margin-top: 8px; justify-content: center;">
+        <div style="writing-mode: vertical-rl; background: rgba(255,182,193,0.2); padding: 8px 4px; border-radius: 8px; border: 1px solid #ffb0c0;">
+          🏠 → 📝 → 💬 → 🔍
+        </div>
+      </div>
+      <p style="font-size: 0.85em; color: #666; margin-top: 8px;">导航栏移到页面左端中间，变为垂直排列</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>🎨 视觉风格</h3>
+  <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;">
+    <div style="width: 30px; height: 30px; border-radius: 50%; background: #fff5f7; border: 2px solid #ffb0c0;"></div>
+    <div style="width: 30px; height: 30px; border-radius: 50%; background: #ffb0c0;"></div>
+    <div style="width: 30px; height: 30px; border-radius: 50%; background: #87ceeb;"></div>
+    <div style="width: 30px; height: 30px; border-radius: 50%; background: #ffffff; border: 2px solid #ddd;"></div>
+    <div style="padding: 4px 12px; background: rgba(255,255,255,0.3); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.5);">
+      🧊 毛玻璃效果
+    </div>
+  </div>
+  <p style="color: #666; font-size: 0.9em; margin-top: 8px;">
+    主色调: 粉白 #fff5f7 · 粉色 #ffb0c0 · 蓝色 #87ceeb · 大量毛玻璃 (backdrop-filter: blur)
+  </p>
+</div>
+
+<div class="options" style="margin-top: 16px;">
+  <div class="option" data-choice="yes" onclick="toggleSelect(this)">
+    <div class="letter">👍</div>
+    <div class="content">
+      <h3>整体布局没问题，继续细化</h3>
+      <p>直接进入下一步的设计细节讨论</p>
+    </div>
+  </div>
+  <div class="option" data-choice="modify" onclick="toggleSelect(this)">
+    <div class="letter">✏️</div>
+    <div class="content">
+      <h3>有调整想法</h3>
+      <p>我想对布局或导航做一些修改</p>
+    </div>
+  </div>
+</div>

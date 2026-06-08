@@ -1,0 +1,26 @@
+<h2>📝 文章区域布局</h2>
+<p class="subtitle">文章应该以什么形式展示？</p>
+
+<div class="cards" style="display: flex; gap: 16px; margin-top: 12px;">
+  <div class="card" data-choice="cards" onclick="toggleSelect(this)" style="flex: 1;">
+    <div class="card-body" style="text-align: center;">
+      <div style="font-size: 40px; margin: 12px 0;">🗂️</div>
+      <h3>卡片式</h3>
+      <p style="font-size: 0.85em;">每篇文章一张毛玻璃卡片，图文并茂，网格排列</p>
+    </div>
+  </div>
+  <div class="card" data-choice="timeline" onclick="toggleSelect(this)" style="flex: 1;">
+    <div class="card-body" style="text-align: center;">
+      <div style="font-size: 40px; margin: 12px 0;">📋</div>
+      <h3>时间线式</h3>
+      <p style="font-size: 0.85em;">按发布时间纵向排列，左侧日期线</p>
+    </div>
+  </div>
+  <div class="card" data-choice="magazine" onclick="toggleSelect(this)" style="flex: 1;">
+    <div class="card-body" style="text-align: center;">
+      <div style="font-size: 40px; margin: 12px 0;">📰</div>
+      <h3>杂志式</h3>
+      <p style="font-size: 0.85em;">首篇文章大图置顶，其余小卡片瀑布流</p>
+    </div>
+  </div>
+</div>

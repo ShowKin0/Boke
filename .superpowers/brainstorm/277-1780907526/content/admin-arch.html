@@ -1,0 +1,75 @@
+<h2>⚙️ 后台管理 — 架构方案</h2>
+<p class="subtitle">有了后台管理需求，需要引入服务端，以下是两种方案</p>
+
+<div class="cards" style="display: flex; gap: 16px; margin-top: 12px;">
+  <div class="card" data-choice="express" onclick="toggleSelect(this)" style="flex: 1;">
+    <div class="card-body">
+      <h3>🟢 方案 A：Node.js + Express</h3>
+      <p style="font-size: 0.9em; margin: 8px 0;">推荐</p>
+      <ul style="font-size: 0.85em; text-align: left; padding-left: 20px;">
+        <li>Express 服务端 + JSON 文件存储</li>
+        <li>静态文件托管前端页面</li>
+        <li>RESTful API 提供 CRUD 操作</li>
+        <li>简单密码认证</li>
+        <li>管理员后台独立页面 /admin</li>
+        <li>部署简单，无需数据库</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" data-choice="static" onclick="toggleSelect(this)" style="flex: 1;">
+    <div class="card-body">
+      <h3>🟡 方案 B：纯静态 + localStorage</h3>
+      <p style="font-size: 0.9em; margin: 8px 0;">简化版</p>
+      <ul style="font-size: 0.85em; text-align: left; padding-left: 20px;">
+        <li>无需服务端，纯前端</li>
+        <li>数据存 localStorage</li>
+        <li>管理员模式在页面内切换</li>
+        <li>数据仅当前浏览器可见</li>
+        <li>无法多设备同步</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 16px;">
+  <h3>📋 后台管理功能</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+    <div style="background: rgba(255,182,193,0.15); padding: 12px; border-radius: 8px;">
+      <strong>📝 文章管理</strong><br>
+      <span style="font-size: 0.85em;">新增/编辑/删除/置顶</span>
+    </div>
+    <div style="background: rgba(135,206,235,0.15); padding: 12px; border-radius: 8px;">
+      <strong>💬 动态管理</strong><br>
+      <span style="font-size: 0.85em;">发布/编辑/删除动态</span>
+    </div>
+    <div style="background: rgba(255,182,193,0.15); padding: 12px; border-radius: 8px;">
+      <strong>🔍 探索管理</strong><br>
+      <span style="font-size: 0.85em;">新增/编辑/分类/删除链接</span>
+    </div>
+    <div style="background: rgba(135,206,235,0.15); padding: 12px; border-radius: 8px;">
+      <strong>🎵 音乐管理</strong><br>
+      <span style="font-size: 0.85em;">添加/删除歌曲、外链歌单</span>
+    </div>
+    <div style="background: rgba(255,255,255,0.3); padding: 12px; border-radius: 8px; grid-column: span 2;">
+      <strong>🎨 主题配色</strong><br>
+      <span style="font-size: 0.85em;">自定义主色、粉/蓝/背景色等 CSS 变量，实时预览</span>
+    </div>
+  </div>
+</div>
+
+<div class="options" style="margin-top: 16px;">
+  <div class="option" data-choice="express" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>方案 A：Express + JSON</h3>
+      <p>功能完整，部署简单，推荐</p>
+    </div>
+  </div>
+  <div class="option" data-choice="static" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>方案 B：纯静态</h3>
+      <p>最简单，但数据局限</p>
+    </div>
+  </div>
+</div>
