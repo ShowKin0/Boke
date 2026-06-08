@@ -1,0 +1,14 @@
+[
+  {
+    "id": "04f81154-dfe5-4095-b814-25c9427b64ec",
+    "title": "Hello World",
+    "summary": "��һƪ��������",
+    "content": "<p>��ӭ�����ҵĲ���</p>",
+    "tags": [
+      "����",
+      "���"
+    ],
+    "isFeatured": true,
+    "createdAt": "2026-06-08T08:54:55.672Z"
+  }
+]

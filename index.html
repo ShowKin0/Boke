@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bōkè - 个人博客</title>
+<style>
+:root {
+  --bg: #fff5f7;
+  --primary: #ffb0c0;
+  --secondary: #87ceeb;
+  --card-bg: rgba(255,255,255,0.6);
+  --text: #2d2d2d;
+  --text-secondary: #888;
+  --radius: 16px;
+  --blur: blur(20px);
+  --shadow: 0 8px 32px rgba(0,0,0,0.08);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ===== 导航栏（双栏交叉淡入淡出） ===== */
+.navbar-fixed {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+}
+.navbar {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  background: var(--card-bg);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid rgba(255,255,255,0.3);
+  user-select: none;
+  transition: opacity 0.6s cubic-bezier(0.4,0,0.2,1), transform 0.6s cubic-bezier(0.4,0,0.2,1);
+}
+/* 顶部导航 */
+.navbar.top-nav {
+  top: 0; left: 50%; transform: translateX(-50%);
+  flex-direction: row; justify-content: center;
+  gap: 4px; padding: 12px 24px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  opacity: 1; pointer-events: auto;
+}
+.navbar.top-nav.hidden {
+  opacity: 0; pointer-events: none;
+  transform: translateX(-50%) translateY(-16px);
+}
+/* 左侧导航 */
+.navbar.left-nav {
+  top: 50%; left: 20px; transform: translateY(-50%);
+  flex-direction: column; gap: 4px;
+  padding: 16px 8px;
+  border-radius: var(--radius);
+  opacity: 0; pointer-events: none;
+}
+.navbar.left-nav.visible {
+  opacity: 1; pointer-events: auto;
+}
+.nav-item {
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  font-size: 15px;
+  color: var(--text-secondary);
+  position: relative;
+  white-space: nowrap;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+}
+.nav-item:hover { color: var(--primary); background: rgba(255,176,192,0.12); }
+.nav-item.active { color: var(--primary); background: rgba(255,176,192,0.15); font-weight: 600; }
+.nav-indicator {
+  position: absolute;
+  background: var(--primary);
+  border-radius: 4px;
+  transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.navbar.top-nav .nav-indicator { bottom: 4px; height: 3px; }
+.navbar.left-nav .nav-indicator { right: 4px; width: 3px; }
+
+/* ===== 通用 ===== */
+.section {
+  min-height: 100vh;
+  padding: 100px 60px 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.section-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 32px;
+  color: var(--text);
+}
+.section-title span { color: var(--primary); }
+
+/* ===== 首页 ===== */
+#home {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 100px 60px 60px;
+  max-width: 1200px; margin: 0 auto;
+  position: relative;
+}
+.hero {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.clock-frame {
+  display: inline-block;
+  padding: 32px 48px;
+  background: var(--card-bg);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-radius: 20px;
+  border: 2px solid rgba(255,255,255,0.4);
+  position: relative;
+  transition: box-shadow 1s ease;
+  box-shadow: 12px 12px 30px rgba(0,0,0,0.06);
+}
+.clock-frame .clock-time {
+  font-size: 72px;
+  font-weight: 300;
+  letter-spacing: 6px;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.clock-frame .clock-date {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  letter-spacing: 2px;
+}
+/* 首页侧边小卡片 — 左右布局 */
+.home-side-cards {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  max-width: 800px;
+  margin-top: 32px;
+}
+.home-side-cards .side-column {
+  flex: 1;
+  min-width: 0;
+}
+.side-column h4 {
+  font-size: 15px;
+  margin-bottom: 12px;
+  color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+}
+.mini-card {
+  background: var(--card-bg);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.mini-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+.mini-card .mini-title {
+  font-size: 14px; font-weight: 600;
+  margin-bottom: 4px; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mini-card .mini-meta {
+  font-size: 12px; color: var(--text-secondary);
+}
+.mini-card .mini-badge {
+  font-size: 11px; margin-left: 4px;
+}
+
+/* ===== 毛玻璃卡片 ===== */
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  transition: all 0.4s ease;
+}
+.glass-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+}
+.glass-card h3 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
+.glass-card .card-date { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+.glass-card .card-summary { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+.glass-card .media-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; padding: 2px 8px;
+  background: rgba(255,176,192,0.15);
+  border-radius: 6px; margin-top: 8px;
+}
+.glass-card .card-tag {
+  display: inline-block; padding: 2px 10px;
+  background: rgba(135,206,235,0.15);
+  color: var(--secondary);
+  border-radius: 6px; font-size: 12px; margin-right: 4px;
+}
+
+/* ===== 音乐播放器 ===== */
+.player-widget {
+  background: var(--card-bg);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: var(--shadow);
+  padding: 20px 24px;
+  width: 100%;
+  max-width: 600px;
+}
+.player-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.player-cover {
+  width: 56px; height: 56px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.player-cover.playing { animation: spin 6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.player-info { flex: 1; min-width: 0; }
+.player-info .song-title { font-weight: 600; font-size: 15px; }
+.player-info .song-artist { font-size: 13px; color: var(--text-secondary); }
+.player-controls { display: flex; align-items: center; gap: 12px; }
+.player-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: var(--primary);
+  color: white; cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.player-btn:hover { transform: scale(1.1); }
+.player-btn.small { width: 28px; height: 28px; font-size: 12px; background: rgba(255,176,192,0.3); color: var(--text); }
+.player-progress {
+  flex: 1; height: 4px; background: rgba(0,0,0,0.08);
+  border-radius: 2px; cursor: pointer; position: relative; min-width: 60px;
+}
+.player-progress-bar {
+  height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary));
+  border-radius: 2px; width: 0%; transition: width 0.1s linear;
+}
+.player-time { font-size: 12px; color: var(--text-secondary); min-width: 36px; text-align: center; }
+.player-playlist {
+  margin-top: 12px; max-height: 0; overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.player-playlist.open { max-height: 200px; }
+.playlist-item {
+  padding: 8px 12px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; gap: 10px; font-size: 14px;
+  transition: background 0.2s;
+}
+.playlist-item:hover { background: rgba(255,176,192,0.1); }
+.playlist-item.active { background: rgba(255,176,192,0.15); color: var(--primary); font-weight: 600; }
+
+/* ===== 文章区 杂志式 ===== */
+.article-featured {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+  background: var(--card-bg);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: all 0.4s ease;
+  cursor: pointer;
+}
+.article-featured:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(0,0,0,0.12); }
+.article-featured-cover {
+  height: 100%; min-height: 280px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px;
+}
+.article-featured-body { padding: 32px 32px 32px 0; }
+.article-featured-body h2 { font-size: 24px; margin-bottom: 12px; color: var(--text); }
+.article-featured-body p { font-size: 14px; color: var(--text-secondary); line-height: 1.8; }
+.article-featured-body .meta { font-size: 13px; color: var(--text-secondary); margin-top: 16px; }
+.articles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+.articles-grid .glass-card { cursor: pointer; }
+.articles-grid .article-cover {
+  width: 100%; height: 160px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--secondary), var(--primary));
+  margin-bottom: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+}
+
+/* ===== 动态区 社交式 ===== */
+.updates-list { display: flex; flex-direction: column; gap: 20px; }
+.update-card {
+  background: var(--card-bg);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  transition: all 0.4s ease;
+}
+.update-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+.update-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.update-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 18px; font-weight: 600; flex-shrink: 0;
+}
+.update-name { font-weight: 600; font-size: 15px; }
+.update-time { font-size: 13px; color: var(--text-secondary); }
+.update-content { font-size: 15px; line-height: 1.7; margin-bottom: 12px; }
+.update-media {
+  display: grid; gap: 4px; border-radius: 12px; overflow: hidden;
+}
+.update-media img, .update-media video {
+  width: 100%; border-radius: 8px; cursor: pointer;
+  transition: transform 0.3s;
+}
+.update-media img:hover, .update-media video:hover { transform: scale(1.02); }
+.update-media-1 { grid-template-columns: 1fr; max-width: 400px; }
+.update-media-2 { grid-template-columns: 1fr 1fr; }
+.update-media-3, .update-media-4, .update-media-5, .update-media-6 { grid-template-columns: 1fr 1fr; }
+.update-media-7, .update-media-8, .update-media-9 { grid-template-columns: 1fr 1fr 1fr; }
+.update-media audio { width: 100%; margin-top: 8px; border-radius: 8px; }
+
+/* ===== 探索区 标签筛选 ===== */
+.explore-tabs {
+  display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+}
+.explore-tab {
+  padding: 8px 20px; border-radius: 20px; border: none;
+  background: var(--card-bg); backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  font-size: 14px; cursor: pointer; color: var(--text-secondary);
+  transition: all 0.3s; font-family: inherit;
+}
+.explore-tab:hover { background: rgba(255,176,192,0.12); color: var(--text); }
+.explore-tab.active { background: var(--primary); color: white; }
+.explore-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.explore-item {
+  background: var(--card-bg);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  transition: all 0.4s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--text);
+  display: block;
+}
+.explore-item:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(0,0,0,0.12); }
+.explore-item .icon { font-size: 32px; margin-bottom: 10px; display: block; }
+.explore-item h4 { font-size: 16px; margin-bottom: 6px; }
+.explore-item p { font-size: 13px; color: var(--text-secondary); }
+.explore-item .explore-media {
+  margin-top: 12px; border-radius: 10px; overflow: hidden;
+}
+.explore-item .explore-media video, .explore-item .explore-media img {
+  width: 100%; max-height: 160px; object-fit: cover; border-radius: 10px;
+}
+.explore-item .explore-category {
+  display: inline-block; padding: 2px 10px; border-radius: 6px;
+  font-size: 12px; margin-top: 10px; background: rgba(135,206,235,0.15); color: var(--secondary);
+}
+
+/* ===== 滚动动画 ===== */
+.fade-up {
+  opacity: 0; transform: translateY(40px);
+  transition: all 0.7s cubic-bezier(0.4,0,0.2,1);
+}
+.fade-up.visible { opacity: 1; transform: translateY(0); }
+
+/* ===== 灯箱 ===== */
+.lightbox {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85); z-index: 2000;
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(10px);
+}
+.lightbox.open { display: flex; }
+.lightbox-content { max-width: 90vw; max-height: 90vh; border-radius: 12px; }
+.lightbox-close {
+  position: absolute; top: 24px; right: 24px; width: 40px; height: 40px;
+  border-radius: 50%; border: none; background: rgba(255,255,255,0.15);
+  color: white; font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ===== 加载/空状态 ===== */
+.loading-spinner {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 40px; color: var(--text-secondary); font-size: 14px;
+}
+.loading-spinner::before {
+  content: ''; width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--primary); border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 768px) {
+  .section { padding: 80px 16px 40px; }
+  .navbar.top-nav { padding: 8px 12px; gap: 2px; }
+  .navbar.left-nav { left: 8px; padding: 12px 6px; }
+  .nav-item { padding: 8px 12px; font-size: 13px; }
+  .navbar.left-nav .nav-item { padding: 6px 10px; font-size: 12px; }
+  .clock-frame { padding: 20px 24px; }
+  .clock-frame .clock-time { font-size: 42px; letter-spacing: 3px; }
+  #home { padding: 80px 16px 40px; }
+  .home-side-cards { flex-direction: column; max-width: 100%; }
+  .player-widget { max-width: 100%; }
+  .article-featured { grid-template-columns: 1fr; }
+  .article-featured-body { padding: 20px; }
+  .article-featured-cover { min-height: 180px; }
+  .articles-grid { grid-template-columns: 1fr; }
+  .explore-grid { grid-template-columns: 1fr; }
+  .update-media { gap: 2px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 导航栏（双栏交叉淡入淡出） ===== -->
+<nav class="navbar top-nav" id="topNav">
+  <button class="nav-item active" data-section="home">🏠 首页</button>
+  <button class="nav-item" data-section="articles">📝 文章</button>
+  <button class="nav-item" data-section="updates">💬 动态</button>
+  <button class="nav-item" data-section="explore">🔍 探索</button>
+  <a href="/admin.html" class="nav-item" style="text-decoration:none;" target="_blank">⚙️</a>
+  <div class="nav-indicator" id="indicatorTop"></div>
+</nav>
+
+<nav class="navbar left-nav" id="leftNav">
+  <button class="nav-item active" data-section="home">🏠</button>
+  <button class="nav-item" data-section="articles">📝</button>
+  <button class="nav-item" data-section="updates">💬</button>
+  <button class="nav-item" data-section="explore">🔍</button>
+  <a href="/admin.html" class="nav-item" style="text-decoration:none;" target="_blank">⚙️</a>
+  <div class="nav-indicator" id="indicatorLeft"></div>
+</nav>
+
+<!-- ===== 首页 ===== -->
+<section class="section" id="home">
+  <div class="hero fade-up">
+    <div class="clock-frame" id="clockFrame">
+      <div class="clock-time" id="clockTime">00:00:00</div>
+      <div class="clock-date" id="clockDate">2026年1月1日 星期一</div>
+    </div>
+  </div>
+
+  <div class="player-widget fade-up" id="playerWidget">
+    <div class="player-header">
+      <div class="player-cover" id="playerCover">🎵</div>
+      <div class="player-info">
+        <div class="song-title" id="songTitle">未播放</div>
+        <div class="song-artist" id="songArtist">点击播放音乐</div>
+      </div>
+      <div class="player-controls">
+        <button class="player-btn small" id="prevBtn">⏮</button>
+        <button class="player-btn" id="playBtn">▶</button>
+        <button class="player-btn small" id="nextBtn">⏭</button>
+        <div class="player-progress" id="progressWrap">
+          <div class="player-progress-bar" id="progressBar"></div>
+        </div>
+        <span class="player-time" id="timeDisplay">0:00</span>
+        <button class="player-btn small" id="listToggleBtn">📋</button>
+      </div>
+    </div>
+    <div class="player-playlist" id="playlist">
+      <div class="loading-spinner">加载中...</div>
+    </div>
+  </div>
+
+  <div class="home-side-cards fade-up" id="homeSideCards">
+    <div class="side-column" id="homeArticlesCol">
+      <h4>📖 最新文章</h4>
+      <div class="loading-spinner" style="padding:20px;">加载中...</div>
+    </div>
+    <div class="side-column" id="homeUpdatesCol">
+      <h4>💬 最新动态</h4>
+      <div class="loading-spinner" style="padding:20px;">加载中...</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 文章区 ===== -->
+<section class="section" id="articles">
+  <h2 class="section-title fade-up"><span>📝</span> 文章</h2>
+  <div class="loading-spinner" id="articlesLoading">加载中...</div>
+  <div id="articlesContainer"></div>
+</section>
+
+<!-- ===== 动态区 ===== -->
+<section class="section" id="updates">
+  <h2 class="section-title fade-up"><span>💬</span> 动态</h2>
+  <div class="updates-list" id="updatesContainer">
+    <div class="loading-spinner">加载中...</div>
+  </div>
+</section>
+
+<!-- ===== 探索区 ===== -->
+<section class="section" id="explore">
+  <h2 class="section-title fade-up"><span>🔍</span> 探索</h2>
+  <div class="explore-tabs fade-up" id="exploreTabs">
+    <button class="explore-tab active" data-category="all">全部</button>
+    <button class="explore-tab" data-category="website">🌐 网站推荐</button>
+    <button class="explore-tab" data-category="source">📦 源码</button>
+    <button class="explore-tab" data-category="video">🎬 学习视频</button>
+  </div>
+  <div class="explore-grid" id="exploreContainer">
+    <div class="loading-spinner" style="grid-column:1/-1;">加载中...</div>
+  </div>
+</section>
+
+<!-- ===== 灯箱 ===== -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close">✕</button>
+  <div class="lightbox-content" id="lightboxContent"></div>
+</div>
+
+<script>
+// ===== 状态管理 =====
+let articles = [], updates = [], explores = [], musicList = [], theme = {};
+let currentCategory = 'all';
+let currentSongIndex = 0;
+let isPlaying = false;
+const audio = new Audio();
+
+// ===== 数据获取 =====
+async function fetchData(url) {
+  try {
+    const res = await fetch(url);
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function loadAll() {
+  const homeData = await fetchData('/api/home');
+  if (homeData) {
+    articles = homeData.articles || [];
+    updates = homeData.updates || [];
+    musicList = homeData.music || [];
+    theme = homeData.theme || {};
+    applyTheme(theme);
+  }
+  const allArticles = await fetchData('/api/articles');
+  if (allArticles) articles = allArticles;
+  const allUpdates = await fetchData('/api/updates');
+  if (allUpdates) updates = allUpdates;
+  const allExplores = await fetchData('/api/explores');
+  if (allExplores) explores = allExplores;
+  const musicData = await fetchData('/api/music');
+  if (musicData) musicList = musicData;
+  const themeData = await fetchData('/api/theme');
+  if (themeData) { theme = themeData; applyTheme(theme); }
+
+  renderHomeArticles();
+  renderHomeUpdates();
+  renderArticles();
+  renderUpdates();
+  renderExplores();
+  renderPlaylist();
+  initFadeUp();
+}
+
+// ===== 主题 =====
+function applyTheme(t) {
+  const r = document.documentElement.style;
+  if (t.bgColor) r.setProperty('--bg', t.bgColor);
+  if (t.primaryColor) r.setProperty('--primary', t.primaryColor);
+  if (t.secondaryColor) r.setProperty('--secondary', t.secondaryColor);
+  if (t.cardBg) r.setProperty('--card-bg', t.cardBg);
+  if (t.textColor) r.setProperty('--text', t.textColor);
+  if (t.textSecondary) r.setProperty('--text-secondary', t.textSecondary);
+}
+
+// ===== 时钟 =====
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clockTime').textContent = `${h}:${m}:${s}`;
+  const days = ['日','一','二','三','四','五','六'];
+  document.getElementById('clockDate').textContent =
+    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 星期${days[now.getDay()]}`;
+
+  // 时钟阴影随太阳位置变化
+  const hour = now.getHours() + now.getMinutes() / 60;
+  const angle = (hour / 24) * 360;
+  const rad = (angle * Math.PI) / 180;
+  const shadowX = Math.sin(rad) * 24;
+  const shadowY = Math.cos(rad) * 24;
+  const blur = 24 + Math.sin(rad) * 12;
+  const opacity = 0.04 + Math.abs(Math.sin(rad)) * 0.06;
+  document.getElementById('clockFrame').style.boxShadow =
+    `${shadowX.toFixed(1)}px ${shadowY.toFixed(1)}px ${blur.toFixed(1)}px rgba(0,0,0,${opacity.toFixed(3)})`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ===== 滚动触发动画 =====
+function initFadeUp() {
+  const els = document.querySelectorAll('.fade-up');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  els.forEach(el => observer.observe(el));
+}
+
+// ===== 导航栏（双栏交叉淡入淡出） =====
+const topNav = document.getElementById('topNav');
+const leftNav = document.getElementById('leftNav');
+const indicatorTop = document.getElementById('indicatorTop');
+const indicatorLeft = document.getElementById('indicatorLeft');
+const navItemsAll = document.querySelectorAll('.nav-item[data-section]');
+let navDebounceTimer = null;
+
+function updateNavbar() {
+  const homeEl = document.getElementById('home');
+  const homeBottom = homeEl ? homeEl.getBoundingClientRect().bottom : window.innerHeight;
+  const threshold = Math.min(window.innerHeight * 0.6, homeEl ? homeEl.offsetHeight - 100 : 400);
+  const pastHome = homeBottom < threshold;
+
+  // 交叉淡入淡出
+  topNav.classList.toggle('hidden', pastHome);
+  leftNav.classList.toggle('visible', pastHome);
+
+  updateActiveSection();
+}
+
+function updateActiveSection() {
+  const sections = ['home','articles','updates','explore'];
+  let active = 'home';
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= 200) active = id;
+    }
+  });
+  navItemsAll.forEach(item => {
+    item.classList.toggle('active', item.dataset.section === active);
+  });
+  // 同时更新两个指示器
+  updateIndicator(active, topNav, indicatorTop, true);
+  updateIndicator(active, leftNav, indicatorLeft, false);
+}
+
+function updateIndicator(active, navEl, indEl, isTop) {
+  const activeItem = navEl.querySelector(`.nav-item[data-section="${active}"]`);
+  if (!activeItem || navEl.classList.contains('hidden') && isTop || navEl.classList.contains('visible') === false && !isTop) {
+    if (indEl) indEl.style.opacity = '0';
+    return;
+  }
+  if (indEl) indEl.style.opacity = '1';
+  if (!activeItem) return;
+  const rect = activeItem.getBoundingClientRect();
+  const navRect = navEl.getBoundingClientRect();
+  if (isTop) {
+    indEl.style.cssText =
+      `left:${rect.left - navRect.left + 8}px;width:${rect.width - 16}px;bottom:4px;height:3px;top:auto;right:auto;opacity:1;`;
+  } else {
+    indEl.style.cssText =
+      `top:${rect.top - navRect.top + 6}px;height:${rect.height - 12}px;right:4px;width:3px;left:auto;bottom:auto;opacity:1;`;
+  }
+}
+
+window.addEventListener('scroll', () => {
+  if (navDebounceTimer) cancelAnimationFrame(navDebounceTimer);
+  navDebounceTimer = requestAnimationFrame(() => { updateNavbar(); });
+}, { passive: true });
+
+window.addEventListener('resize', updateActiveSection);
+setTimeout(() => { updateNavbar(); }, 100);
+
+navItemsAll.forEach(item => {
+  item.addEventListener('click', () => {
+    const section = item.dataset.section;
+    document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+// ===== 首页 - 最新文章（小卡片） =====
+function renderHomeArticles() {
+  const col = document.getElementById('homeArticlesCol');
+  if (!articles.length) {
+    col.innerHTML = '<h4>📖 最新文章</h4><div class="empty-state" style="padding:20px;"><div class="icon" style="font-size:28px;">📝</div><p style="font-size:13px;">暂无文章</p></div>';
+    return;
+  }
+  const top3 = articles.slice(0, 3);
+  let html = '<h4>📖 最新文章</h4>';
+  top3.forEach(a => {
+    const badges = (a.mediaList && a.mediaList.length) ? a.mediaList.map(m =>
+      m.type === 'video' ? '🎬' : m.type === 'audio' ? '🎵' : '🖼️'
+    ).join('') : '';
+    html += `<div class="mini-card" onclick="document.getElementById('articles').scrollIntoView({behavior:'smooth'})">
+      <div class="mini-title">${a.title || '无标题'}${badges ? `<span class="mini-badge">${badges}</span>` : ''}</div>
+      <div class="mini-meta">${a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN') : ''} · ${(a.summary || '暂无摘要').substring(0, 24)}${(a.summary||'').length > 24 ? '…' : ''}</div>
+    </div>`;
+  });
+  col.innerHTML = html;
+}
+
+// ===== 首页 - 最新动态（小卡片） =====
+function renderHomeUpdates() {
+  const col = document.getElementById('homeUpdatesCol');
+  if (!updates.length) {
+    col.innerHTML = '<h4>💬 最新动态</h4><div class="empty-state" style="padding:20px;"><div class="icon" style="font-size:28px;">💬</div><p style="font-size:13px;">暂无动态</p></div>';
+    return;
+  }
+  const top3 = updates.slice(0, 3);
+  let html = '<h4>💬 最新动态</h4>';
+  top3.forEach(u => {
+    const badges = (u.mediaList && u.mediaList.length) ? u.mediaList.map(m =>
+      m.type === 'video' ? '🎬' : m.type === 'audio' ? '🎵' : '🖼️'
+    ).join('') : '';
+    html += `<div class="mini-card" onclick="document.getElementById('updates').scrollIntoView({behavior:'smooth'})">
+      <div class="mini-title">${(u.content || '无内容').substring(0, 30)}${(u.content||'').length > 30 ? '…' : ''}${badges ? `<span class="mini-badge">${badges}</span>` : ''}</div>
+      <div class="mini-meta">${u.createdAt ? new Date(u.createdAt).toLocaleDateString('zh-CN') : ''}</div>
+    </div>`;
+  });
+  col.innerHTML = html;
+}
+
+// ===== 文章区 =====
+function renderArticles() {
+  const container = document.getElementById('articlesContainer');
+  const loading = document.getElementById('articlesLoading');
+  if (loading) loading.style.display = 'none';
+  if (!articles.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📝</div><p>暂无文章</p></div>`;
+    return;
+  }
+  let html = '';
+  // 置顶/首篇
+  const featured = articles[0];
+  const fMedia = featured.mediaList && featured.mediaList.length
+    ? featured.mediaList.map(m => m.type === 'video' ? '🎬' : m.type === 'audio' ? '🎵' : '🖼️').join(' ') : '';
+  html += `<div class="article-featured fade-up" onclick="openLightbox('text','${featured.title||''}')">
+    <div class="article-featured-cover">${fMedia || '📰'}</div>
+    <div class="article-featured-body">
+      <h2>${featured.title || '无标题'}</h2>
+      <p>${featured.summary || '暂无摘要'}</p>
+      <div class="meta">
+        ${featured.createdAt ? new Date(featured.createdAt).toLocaleDateString('zh-CN') : ''}
+        ${featured.tags ? featured.tags.map(t => `<span class="card-tag">${t}</span>`).join('') : ''}
+        ${fMedia ? `<span class="media-badge">${fMedia}</span>` : ''}
+      </div>
+    </div>
+  </div>`;
+
+  // 其余文章
+  const rest = articles.slice(1);
+  if (rest.length) {
+    html += '<div class="articles-grid" style="margin-top:24px;">';
+    rest.forEach(a => {
+      const badges = (a.mediaList && a.mediaList.length) ? a.mediaList.map(m =>
+        m.type === 'video' ? '🎬' : m.type === 'audio' ? '🎵' : '🖼️'
+      ).join(' ') : '';
+      html += `<div class="glass-card fade-up">
+        <div class="article-cover">${badges || '📰'}</div>
+        <h3>${a.title || '无标题'}</h3>
+        <div class="card-date">${a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN') : ''}</div>
+        <div class="card-summary">${(a.summary || '').substring(0, 80)}${(a.summary||'').length > 80 ? '...' : ''}</div>
+        ${a.tags ? a.tags.map(t => `<span class="card-tag">${t}</span>`).join('') : ''}
+        ${badges ? `<div class="media-badge">${badges}</div>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+  container.innerHTML = html;
+  initFadeUp();
+}
+
+// ===== 动态区 =====
+function renderUpdates() {
+  const container = document.getElementById('updatesContainer');
+  if (!updates.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">💬</div><p>暂无动态</p></div>`;
+    return;
+  }
+  container.innerHTML = updates.map(u => {
+    const mediaHtml = renderMediaList(u.mediaList);
+    return `<div class="update-card fade-up">
+      <div class="update-header">
+        <div class="update-avatar">👤</div>
+        <div>
+          <div class="update-name">站主</div>
+          <div class="update-time">${u.createdAt ? new Date(u.createdAt).toLocaleString('zh-CN') : ''}</div>
+        </div>
+      </div>
+      <div class="update-content">${escapeHtml(u.content || '')}</div>
+      ${mediaHtml}
+    </div>`;
+  }).join('');
+  initFadeUp();
+}
+
+// ===== 探索区 =====
+function renderExplores(category) {
+  const container = document.getElementById('exploreContainer');
+  const filtered = category && category !== 'all' ? explores.filter(e => e.category === category) : explores;
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🔍</div><p>暂无探索项目</p></div>`;
+    return;
+  }
+  container.innerHTML = filtered.map(e => {
+    let mediaHtml = '';
+    if (e.previewMedia) {
+      if (e.previewMedia.type === 'video') {
+        mediaHtml = `<div class="explore-media">
+          <video src="${e.previewMedia.url}" poster="${e.previewMedia.cover || ''}" controls preload="metadata"></video>
+        </div>`;
+      } else if (e.previewMedia.type === 'image') {
+        mediaHtml = `<div class="explore-media"><img src="${e.previewMedia.url}" alt="${e.title}" loading="lazy"></div>`;
+      }
+    }
+    const categoryLabel = e.category === 'website' ? '🌐 网站推荐' : e.category === 'source' ? '📦 源码' : '🎬 学习视频';
+    return `<a class="explore-item fade-up" href="${e.url || '#'}" target="_blank" rel="noopener">
+      <span class="icon">${e.icon || '🔗'}</span>
+      <h4>${e.title || ''}</h4>
+      <p>${e.description || ''}</p>
+      ${mediaHtml}
+      <span class="explore-category">${categoryLabel}</span>
+    </a>`;
+  }).join('');
+  initFadeUp();
+}
+
+// ===== 多媒体渲染 =====
+function renderMediaList(mediaList) {
+  if (!mediaList || !mediaList.length) return '';
+  const images = mediaList.filter(m => m.type === 'image');
+  const audios = mediaList.filter(m => m.type === 'audio');
+  const videos = mediaList.filter(m => m.type === 'video');
+  let html = '';
+  if (images.length) {
+    const cls = `update-media update-media-${Math.min(images.length, 9)}`;
+    html += `<div class="${cls}">`;
+    images.forEach(img => {
+      html += `<img src="${img.url}" alt="${img.alt || ''}" loading="lazy"
+        onclick="event.stopPropagation();openLightbox('image','${img.url}')">`;
+    });
+    html += '</div>';
+  }
+  audios.forEach(a => {
+    html += `<div style="margin-top:8px;"><audio src="${a.url}" controls style="width:100%;border-radius:8px;"></audio></div>`;
+  });
+  videos.forEach(v => {
+    html += `<div style="margin-top:8px;">
+      <video src="${v.url}" controls preload="metadata" style="width:100%;border-radius:8px;max-height:400px;"
+        poster="${v.cover || ''}"></video>
+    </div>`;
+  });
+  return html;
+}
+
+// ===== 灯箱 =====
+function openLightbox(type, src) {
+  const lb = document.getElementById('lightbox');
+  const content = document.getElementById('lightboxContent');
+  lb.classList.add('open');
+  if (type === 'image') {
+    content.innerHTML = `<img src="${src}" class="lightbox-content" style="max-width:90vw;max-height:90vh;border-radius:12px;">`;
+  } else {
+    content.innerHTML = `<div style="color:white;font-size:24px;padding:40px;text-align:center;">${src}</div>`;
+  }
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+document.getElementById('lightbox').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeLightbox();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+
+// ===== 音乐播放器 =====
+function renderPlaylist() {
+  const playlist = document.getElementById('playlist');
+  if (!musicList.length) {
+    playlist.innerHTML = '<div style="padding:12px;color:var(--text-secondary);font-size:14px;">暂无歌曲</div>';
+    return;
+  }
+  playlist.innerHTML = musicList.map((s, i) =>
+    `<div class="playlist-item ${i === currentSongIndex ? 'active' : ''}" onclick="playSong(${i})">
+      <span>${i === currentSongIndex && isPlaying ? '🔊' : '🎵'}</span>
+      <span>${s.title || '未知'} - ${s.artist || '未知'}</span>
+    </div>`
+  ).join('');
+}
+
+function playSong(index) {
+  if (!musicList[index] || !musicList[index].src) return;
+  currentSongIndex = index;
+  audio.src = musicList[index].src;
+  audio.play().then(() => {
+    isPlaying = true;
+    updatePlayerUI();
+    renderPlaylist();
+  }).catch(() => {});
+}
+
+document.getElementById('playBtn').addEventListener('click', () => {
+  if (!musicList.length) return;
+  if (audio.src) {
+    if (isPlaying) { audio.pause(); isPlaying = false; } else { audio.play().then(() => { isPlaying = true; }); }
+    updatePlayerUI();
+  } else if (musicList.length) {
+    playSong(0);
+  }
+});
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if (!musicList.length) return;
+  currentSongIndex = (currentSongIndex - 1 + musicList.length) % musicList.length;
+  playSong(currentSongIndex);
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  if (!musicList.length) return;
+  currentSongIndex = (currentSongIndex + 1) % musicList.length;
+  playSong(currentSongIndex);
+});
+document.getElementById('listToggleBtn').addEventListener('click', () => {
+  document.getElementById('playlist').classList.toggle('open');
+});
+
+// 进度条
+document.getElementById('progressWrap').addEventListener('click', (e) => {
+  if (!audio.duration) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  audio.currentTime = pct * audio.duration;
+});
+
+audio.addEventListener('timeupdate', updateProgress);
+audio.addEventListener('ended', () => {
+  if (musicList.length) {
+    currentSongIndex = (currentSongIndex + 1) % musicList.length;
+    playSong(currentSongIndex);
+  }
+});
+
+function updateProgress() {
+  if (!audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  document.getElementById('progressBar').style.width = pct + '%';
+  const m = Math.floor(audio.currentTime / 60);
+  const s = Math.floor(audio.currentTime % 60);
+  document.getElementById('timeDisplay').textContent = `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function updatePlayerUI() {
+  const btn = document.getElementById('playBtn');
+  btn.textContent = isPlaying ? '⏸' : '▶';
+  const cover = document.getElementById('playerCover');
+  cover.classList.toggle('playing', isPlaying);
+  if (musicList[currentSongIndex]) {
+    document.getElementById('songTitle').textContent = musicList[currentSongIndex].title || '未知';
+    document.getElementById('songArtist').textContent = musicList[currentSongIndex].artist || '未知';
+  }
+}
+
+// ===== 探索标签切换 =====
+document.getElementById('exploreTabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.explore-tab');
+  if (!tab) return;
+  document.querySelectorAll('.explore-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  currentCategory = tab.dataset.category;
+  renderExplores(currentCategory);
+});
+
+// ===== 工具函数 =====
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+// ===== 视频/音频互斥 =====
+document.addEventListener('play', (e) => {
+  if (e.target.tagName === 'VIDEO' || e.target.tagName === 'AUDIO') {
+    if (e.target !== audio) {
+      document.querySelectorAll('video, audio').forEach(el => {
+        if (el !== e.target && el !== audio && !el.paused) el.pause();
+      });
+    }
+  }
+}, true);
+
+// ===== 初始化 =====
+document.addEventListener('DOMContentLoaded', loadAll);
+</script>
+</body>
+</html>
