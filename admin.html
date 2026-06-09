@@ -105,8 +105,8 @@ tr:hover td { background: rgba(255,176,192,0.04); }
         </div>
         <div class="form-group"><label>内容 (支持 HTML)</label><textarea id="articleContent" placeholder="文章内容..." rows="6"></textarea></div>
         <div class="form-actions">
-          <button class="btn-primary" id="articleSubmitBtn" onclick="saveArticle()">发布文章</button>
-          <button class="btn-secondary" onclick="cancelArticleEdit()" style="display:none" id="articleCancelBtn">取消</button>
+          <button class="btn-primary" id="articleSubmitBtn" onclick="articles.save()">发布文章</button>
+          <button class="btn-secondary" onclick="articles.cancel()" style="display:none" id="articleCancelBtn">取消</button>
         </div>
       </div>
       <div class="table-wrap"><table><thead><tr><th>标题</th><th>标签</th><th>日期</th><th>操作</th></tr></thead><tbody id="articlesTableBody"></tbody></table></div>
@@ -120,8 +120,8 @@ tr:hover td { background: rgba(255,176,192,0.04); }
         <input type="hidden" id="updateEditId">
         <div class="form-group"><label>内容</label><textarea id="updateContent" placeholder="记录生活..." rows="3"></textarea></div>
         <div class="form-actions">
-          <button class="btn-primary" onclick="saveUpdate()">发布动态</button>
-          <button class="btn-secondary" onclick="cancelUpdateEdit()" style="display:none" id="updateCancelBtn">取消</button>
+          <button class="btn-primary" onclick="updates.save()">发布动态</button>
+          <button class="btn-secondary" onclick="updates.cancel()" style="display:none" id="updateCancelBtn">取消</button>
         </div>
       </div>
       <div id="updatesList"></div>
@@ -145,8 +145,8 @@ tr:hover td { background: rgba(255,176,192,0.04); }
         </div>
         <div class="form-group"><label>描述</label><textarea id="exploreDescription" rows="2"></textarea></div>
         <div class="form-actions">
-          <button class="btn-primary" onclick="saveExplore()">添加</button>
-          <button class="btn-secondary" onclick="cancelExploreEdit()" style="display:none" id="exploreCancelBtn">取消</button>
+          <button class="btn-primary" onclick="explores.save()">添加</button>
+          <button class="btn-secondary" onclick="explores.cancel()" style="display:none" id="exploreCancelBtn">取消</button>
         </div>
       </div>
       <div class="table-wrap"><table><thead><tr><th>标题</th><th>分类</th><th>操作</th></tr></thead><tbody id="exploresTableBody"></tbody></table></div>
@@ -164,8 +164,8 @@ tr:hover td { background: rgba(255,176,192,0.04); }
         </div>
         <div class="form-group"><label>外链歌单 / 音频链接</label><input id="musicUrl" placeholder="https://music.163.com/... 或音频文件链接"></div>
         <div class="form-actions">
-          <button class="btn-primary" onclick="saveMusic()">添加歌曲</button>
-          <button class="btn-secondary" onclick="cancelMusicEdit()" style="display:none" id="musicCancelBtn">取消</button>
+          <button class="btn-primary" onclick="music.save()">添加歌曲</button>
+          <button class="btn-secondary" onclick="music.cancel()" style="display:none" id="musicCancelBtn">取消</button>
         </div>
       </div>
       <div class="table-wrap"><table><thead><tr><th>歌曲</th><th>艺术家</th><th>类型</th><th>操作</th></tr></thead><tbody id="musicTableBody"></tbody></table></div>
@@ -227,165 +227,155 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(el => el.style.display = el.id === 'tab-'+tab ? 'block' : 'none');
 }
 
+// ===== CRUD 工厂（统一增删改查模式） =====
+function createCRUD(cfg) {
+  let items = [];
+  function load() {
+    items = store[cfg.key] || [];
+    cfg.render(items);
+  }
+  function edit(id) {
+    const item = items.find(x => x.id === id);
+    if (!item) return;
+    cfg.fields.forEach(f => {
+      const el = document.getElementById(f.id);
+      if (el) el.value = f.get ? f.get(item) : (item[f.prop] || '');
+    });
+    document.getElementById(cfg.editId).value = id;
+    if (cfg.formTitleId) document.getElementById(cfg.formTitleId).textContent = cfg.editTitle;
+    if (cfg.submitBtnId) document.getElementById(cfg.submitBtnId).textContent = cfg.editBtn;
+    document.getElementById(cfg.cancelBtnId).style.display = 'inline-block';
+    if (cfg.onEdit) cfg.onEdit(item);
+  }
+  function cancel() {
+    cfg.fields.forEach(f => { const el = document.getElementById(f.id); if (el) el.value = ''; });
+    if (cfg.onCancel) cfg.onCancel();
+    document.getElementById(cfg.editId).value = '';
+    if (cfg.formTitleId) document.getElementById(cfg.formTitleId).textContent = cfg.addTitle;
+    if (cfg.submitBtnId) document.getElementById(cfg.submitBtnId).textContent = cfg.addBtn;
+    document.getElementById(cfg.cancelBtnId).style.display = 'none';
+  }
+  function save() {
+    const id = document.getElementById(cfg.editId).value;
+    const data = cfg.buildData();
+    if (id) { const idx = items.findIndex(i => i.id === id); if (idx !== -1) items[idx] = { ...items[idx], ...data }; }
+    else { items.unshift({ id: genId(), ...data, createdAt: now() }); }
+    store[cfg.key] = items; saveStore(store);
+    showToast(id ? '已更新' : cfg.addedMsg || '已添加');
+    cancel(); load();
+  }
+  function del(id) {
+    if (!confirm('确定删除？')) return;
+    if (cfg.onDelete) cfg.onDelete(items.find(i => i.id === id));
+    items = items.filter(i => i.id !== id);
+    store[cfg.key] = items; saveStore(store);
+    showToast('已删除'); load();
+  }
+  return { load, edit, cancel, save, delete: del, get items() { return items; } };
+}
+
 // ===== 文章 CRUD =====
-let articles = [];
-function loadArticles() {
-  articles = store.articles || [];
-  const tbody = document.getElementById('articlesTableBody');
-  if (!articles.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">暂无文章</td></tr>'; return; }
-  tbody.innerHTML = articles.map(a => `<tr>
-    <td><strong>${escapeHtml(a.title||'')}</strong> ${a.tags?.length ? `<span style="font-size:11px;color:var(--text2);">${a.tags.slice(0,2).join(', ')}</span>` : ''}</td>
-    <td>${(a.tags||[]).map(t => `<span style="display:inline-block;padding:1px 8px;background:rgba(135,206,235,0.15);border-radius:4px;font-size:12px;margin:1px;">${t}</span>`).join('')}</td>
-    <td>${formatDate(a.createdAt)}</td>
-    <td><button class="btn-sm edit" onclick="editArticle('${a.id}')">编辑</button><button class="btn-sm del" onclick="deleteArticle('${a.id}')">删除</button></td>
-  </tr>`).join('');
-}
-function editArticle(id) {
-  const a = articles.find(x=>x.id===id); if(!a) return;
-  document.getElementById('articleEditId').value = a.id;
-  document.getElementById('articleTitle').value = a.title||'';
-  document.getElementById('articleTags').value = (a.tags||[]).join(', ');
-  document.getElementById('articleSummary').value = a.summary||'';
-  document.getElementById('articleContent').value = a.content||'';
-  document.getElementById('articleFormTitle').textContent = '编辑文章';
-  document.getElementById('articleSubmitBtn').textContent = '保存修改';
-  document.getElementById('articleCancelBtn').style.display = 'inline-block';
-}
-function cancelArticleEdit() {
-  ['articleEditId','articleTitle','articleTags','articleSummary','articleContent'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('articleFormTitle').textContent = '新增文章';
-  document.getElementById('articleSubmitBtn').textContent = '发布文章';
-  document.getElementById('articleCancelBtn').style.display = 'none';
-}
-function saveArticle() {
-  const id = document.getElementById('articleEditId').value;
-  const data = { title: document.getElementById('articleTitle').value.trim()||'无标题', summary: document.getElementById('articleSummary').value.trim(), content: document.getElementById('articleContent').value, tags: document.getElementById('articleTags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean) };
-  if (id) { const idx = articles.findIndex(i=>i.id===id); if(idx!==-1) articles[idx] = {...articles[idx],...data}; }
-  else { articles.unshift({id:genId(),...data,createdAt:now()}); }
-  store.articles = articles; saveStore(store);
-  showToast(id?'已更新':'已发布'); cancelArticleEdit(); loadArticles();
-}
-function deleteArticle(id) {
-  if(!confirm('确定删除？')) return;
-  articles = articles.filter(i=>i.id!==id);
-  store.articles = articles; saveStore(store);
-  showToast('已删除'); loadArticles();
-}
+const articles = createCRUD({
+  key: 'articles',
+  editId: 'articleEditId', formTitleId: 'articleFormTitle', submitBtnId: 'articleSubmitBtn', cancelBtnId: 'articleCancelBtn',
+  addTitle: '新增文章', addBtn: '发布文章', addedMsg: '已发布',
+  editTitle: '编辑文章', editBtn: '保存修改',
+  fields: [
+    { id: 'articleTitle', prop: 'title' },
+    { id: 'articleTags', prop: 'tags', get: (a) => (a.tags||[]).join(', ') },
+    { id: 'articleSummary', prop: 'summary' },
+    { id: 'articleContent', prop: 'content' },
+  ],
+  buildData: () => ({
+    title: document.getElementById('articleTitle').value.trim()||'无标题',
+    tags: document.getElementById('articleTags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+    summary: document.getElementById('articleSummary').value.trim(),
+    content: document.getElementById('articleContent').value,
+  }),
+  render: (items) => {
+    const tbody = document.getElementById('articlesTableBody');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">暂无文章</td></tr>'; return; }
+    tbody.innerHTML = items.map(a => `<tr>
+      <td><strong>${escapeHtml(a.title||'')}</strong></td>
+      <td>${(a.tags||[]).map(t => `<span style="display:inline-block;padding:1px 8px;background:rgba(135,206,235,0.15);border-radius:4px;font-size:12px;margin:1px;">${t}</span>`).join('')}</td>
+      <td>${formatDate(a.createdAt)}</td>
+      <td><button class="btn-sm edit" onclick="articles.edit('${a.id}')">编辑</button><button class="btn-sm del" onclick="articles.delete('${a.id}')">删除</button></td>
+    </tr>`).join('');
+  },
+});
 
 // ===== 动态 CRUD =====
-let updates = [];
-function loadUpdates() {
-  updates = store.updates || [];
-  const container = document.getElementById('updatesList');
-  if (!updates.length) { container.innerHTML = '<div class="table-empty">暂无动态</div>'; return; }
-  container.innerHTML = updates.map(u => `<div style="background:var(--card-bg);backdrop-filter:blur(20px);border-radius:12px;border:1px solid rgba(255,255,255,0.3);padding:16px;margin-bottom:12px;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-      <div style="flex:1;"><p>${escapeHtml(u.content||'(无内容)')}</p>
-        <div style="font-size:13px;color:var(--text2);margin-top:6px;">${formatDate(u.createdAt)}</div></div>
-      <div><button class="btn-sm edit" onclick="editUpdate('${u.id}')">编辑</button><button class="btn-sm del" onclick="deleteUpdate('${u.id}')">删除</button></div>
-    </div></div>`).join('');
-}
-function editUpdate(id) {
-  const u = updates.find(x=>x.id===id); if(!u) return;
-  document.getElementById('updateEditId').value = u.id;
-  document.getElementById('updateContent').value = u.content||'';
-  document.getElementById('updateCancelBtn').style.display = 'inline-block';
-}
-function cancelUpdateEdit() {
-  document.getElementById('updateEditId').value=''; document.getElementById('updateContent').value='';
-  document.getElementById('updateCancelBtn').style.display='none';
-}
-function saveUpdate() {
-  const id = document.getElementById('updateEditId').value;
-  const data = { content: document.getElementById('updateContent').value.trim() };
-  if(id) { const idx = updates.findIndex(i=>i.id===id); if(idx!==-1) updates[idx] = {...updates[idx],...data}; }
-  else { updates.unshift({id:genId(),...data,createdAt:now()}); }
-  store.updates = updates; saveStore(store);
-  showToast(id?'已更新':'已发布'); cancelUpdateEdit(); loadUpdates();
-}
-function deleteUpdate(id) {
-  if(!confirm('确定删除？')) return;
-  updates = updates.filter(i=>i.id!==id);
-  store.updates = updates; saveStore(store);
-  showToast('已删除'); loadUpdates();
-}
+const updates = createCRUD({
+  key: 'updates',
+  editId: 'updateEditId', formTitleId: null, submitBtnId: null, cancelBtnId: 'updateCancelBtn',
+  addTitle: '发布动态', addBtn: '发布动态', addedMsg: '已发布',
+  editTitle: '编辑动态', editBtn: '保存修改',
+  fields: [{ id: 'updateContent', prop: 'content' }],
+  buildData: () => ({ content: document.getElementById('updateContent').value.trim() }),
+  onEdit: () => { document.getElementById('updateForm').querySelector('h4').textContent = '编辑动态'; },
+  onCancel: () => { document.getElementById('updateForm').querySelector('h4').textContent = '发布动态'; },
+  render: (items) => {
+    const container = document.getElementById('updatesList');
+    if (!items.length) { container.innerHTML = '<div class="table-empty">暂无动态</div>'; return; }
+    container.innerHTML = items.map(u => `<div style="background:var(--card-bg);backdrop-filter:blur(20px);border-radius:12px;border:1px solid rgba(255,255,255,0.3);padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div style="flex:1;"><p>${escapeHtml(u.content||'(无内容)')}</p>
+          <div style="font-size:13px;color:var(--text2);margin-top:6px;">${formatDate(u.createdAt)}</div></div>
+        <div><button class="btn-sm edit" onclick="updates.edit('${u.id}')">编辑</button><button class="btn-sm del" onclick="updates.delete('${u.id}')">删除</button></div>
+      </div></div>`).join('');
+  },
+});
 
 // ===== 探索 CRUD =====
-let explores = [];
-function loadExplores() {
-  explores = store.explores || [];
-  const tbody = document.getElementById('exploresTableBody');
-  const labels = { website: '🌐 网站', source: '📦 源码', video: '🎬 视频' };
-  if (!explores.length) { tbody.innerHTML = '<tr><td colspan="3" class="table-empty">暂无项目</td></tr>'; return; }
-  tbody.innerHTML = explores.map(e => `<tr><td>${e.icon||'🔗'} ${escapeHtml(e.title||'')}</td><td>${labels[e.category]||e.category}</td><td><button class="btn-sm edit" onclick="editExplore('${e.id}')">编辑</button><button class="btn-sm del" onclick="deleteExplore('${e.id}')">删除</button></td></tr>`).join('');
-}
-function editExplore(id) {
-  const e = explores.find(x=>x.id===id); if(!e) return;
-  document.getElementById('exploreEditId').value = e.id;
-  document.getElementById('exploreTitle').value = e.title||'';
-  document.getElementById('exploreCategory').value = e.category||'website';
-  document.getElementById('exploreUrl').value = e.url||'';
-  document.getElementById('exploreIcon').value = e.icon||'🔗';
-  document.getElementById('exploreDescription').value = e.description||'';
-  document.getElementById('exploreFormTitle').textContent = '编辑项目';
-  document.getElementById('exploreCancelBtn').style.display = 'inline-block';
-}
-function cancelExploreEdit() {
-  ['exploreEditId','exploreTitle','exploreUrl','exploreIcon','exploreDescription'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('exploreCategory').value='website';
-  document.getElementById('exploreFormTitle').textContent = '新增项目';
-  document.getElementById('exploreCancelBtn').style.display='none';
-}
-function saveExplore() {
-  const id = document.getElementById('exploreEditId').value;
-  const data = { title: document.getElementById('exploreTitle').value.trim(), category: document.getElementById('exploreCategory').value, url: document.getElementById('exploreUrl').value.trim(), icon: document.getElementById('exploreIcon').value.trim()||'🔗', description: document.getElementById('exploreDescription').value.trim() };
-  if(id) { const idx = explores.findIndex(i=>i.id===id); if(idx!==-1) explores[idx] = {...explores[idx],...data}; }
-  else { explores.unshift({id:genId(),...data,createdAt:now()}); }
-  store.explores = explores; saveStore(store);
-  showToast(id?'已更新':'已添加'); cancelExploreEdit(); loadExplores();
-}
-function deleteExplore(id) {
-  if(!confirm('确定删除？')) return;
-  explores = explores.filter(i=>i.id!==id);
-  store.explores = explores; saveStore(store);
-  showToast('已删除'); loadExplores();
-}
+const explores = createCRUD({
+  key: 'explores',
+  editId: 'exploreEditId', formTitleId: 'exploreFormTitle', submitBtnId: null, cancelBtnId: 'exploreCancelBtn',
+  addTitle: '新增项目', addBtn: '添加', addedMsg: '已添加',
+  editTitle: '编辑项目', editBtn: '保存修改',
+  fields: [
+    { id: 'exploreTitle', prop: 'title' },
+    { id: 'exploreCategory', prop: 'category' },
+    { id: 'exploreUrl', prop: 'url' },
+    { id: 'exploreIcon', prop: 'icon' },
+    { id: 'exploreDescription', prop: 'description' },
+  ],
+  buildData: () => ({
+    title: document.getElementById('exploreTitle').value.trim(),
+    category: document.getElementById('exploreCategory').value,
+    url: document.getElementById('exploreUrl').value.trim(),
+    icon: document.getElementById('exploreIcon').value.trim()||'🔗',
+    description: document.getElementById('exploreDescription').value.trim(),
+  }),
+  onCancel: () => { document.getElementById('exploreCategory').value = 'website'; },
+  render: (items) => {
+    const tbody = document.getElementById('exploresTableBody');
+    const labels = { website: '🌐 网站', source: '📦 源码', video: '🎬 视频' };
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="3" class="table-empty">暂无项目</td></tr>'; return; }
+    tbody.innerHTML = items.map(e => `<tr><td>${e.icon||'🔗'} ${escapeHtml(e.title||'')}</td><td>${labels[e.category]||e.category}</td><td><button class="btn-sm edit" onclick="explores.edit('${e.id}')">编辑</button><button class="btn-sm del" onclick="explores.delete('${e.id}')">删除</button></td></tr>`).join('');
+  },
+});
 
 // ===== 音乐 CRUD =====
-let musicList = [];
-function loadMusic() {
-  musicList = store.music || [];
-  const tbody = document.getElementById('musicTableBody');
-  if (!musicList.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">暂无歌曲</td></tr>'; return; }
-  tbody.innerHTML = musicList.map(m => `<tr><td>🎵 ${escapeHtml(m.title||'未知')}</td><td>${escapeHtml(m.artist||'未知')}</td><td>${m.url||m.externalUrl?'🔗 链接':'📁 本地'}</td><td><button class="btn-sm edit" onclick="editMusic('${m.id}')">编辑</button><button class="btn-sm del" onclick="deleteMusic('${m.id}')">删除</button></td></tr>`).join('');
-}
-function editMusic(id) {
-  const m = musicList.find(x=>x.id===id); if(!m) return;
-  document.getElementById('musicEditId').value = m.id;
-  document.getElementById('musicTitle').value = m.title||'';
-  document.getElementById('musicArtist').value = m.artist||'';
-  document.getElementById('musicUrl').value = m.url||m.externalUrl||'';
-  document.getElementById('musicCancelBtn').style.display = 'inline-block';
-}
-function cancelMusicEdit() {
-  ['musicEditId','musicTitle','musicArtist','musicUrl'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('musicCancelBtn').style.display='none';
-}
-function saveMusic() {
-  const id = document.getElementById('musicEditId').value;
-  const url = document.getElementById('musicUrl').value.trim();
-  const data = { title: document.getElementById('musicTitle').value.trim()||'未知', artist: document.getElementById('musicArtist').value.trim()||'未知', url: url||'', externalUrl: url||'', type: url?'external':'external' };
-  if(id) { const idx = musicList.findIndex(i=>i.id===id); if(idx!==-1) musicList[idx] = {...musicList[idx],...data}; }
-  else { musicList.unshift({id:genId(),...data,createdAt:now()}); }
-  store.music = musicList; saveStore(store);
-  showToast(id?'已更新':'已添加'); cancelMusicEdit(); loadMusic();
-}
-function deleteMusic(id) {
-  if(!confirm('确定删除？')) return;
-  musicList = musicList.filter(i=>i.id!==id);
-  store.music = musicList; saveStore(store);
-  showToast('已删除'); loadMusic();
-}
+const music = createCRUD({
+  key: 'music',
+  editId: 'musicEditId', formTitleId: null, submitBtnId: null, cancelBtnId: 'musicCancelBtn',
+  addTitle: '新增歌曲', addBtn: '添加歌曲', addedMsg: '已添加',
+  editTitle: '编辑歌曲', editBtn: '保存修改',
+  fields: [
+    { id: 'musicTitle', prop: 'title' },
+    { id: 'musicArtist', prop: 'artist' },
+    { id: 'musicUrl', prop: 'url' },
+  ],
+  buildData: () => {
+    const url = document.getElementById('musicUrl').value.trim();
+    return { title: document.getElementById('musicTitle').value.trim()||'未知', artist: document.getElementById('musicArtist').value.trim()||'未知', url, externalUrl: url, type: url?'external':'external' };
+  },
+  render: (items) => {
+    const tbody = document.getElementById('musicTableBody');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">暂无歌曲</td></tr>'; return; }
+    tbody.innerHTML = items.map(m => `<tr><td>🎵 ${escapeHtml(m.title||'未知')}</td><td>${escapeHtml(m.artist||'未知')}</td><td>${m.url||m.externalUrl?'🔗 链接':'📁 本地'}</td><td><button class="btn-sm edit" onclick="music.edit('${m.id}')">编辑</button><button class="btn-sm del" onclick="music.delete('${m.id}')">删除</button></td></tr>`).join('');
+  },
+});
 
 // ===== 主题 =====
 const DEFAULT_THEME = { bgColor:'#fff5f7', primaryColor:'#ffb0c0', secondaryColor:'#87ceeb', cardBg:'rgba(255,255,255,0.6)', textColor:'#2d2d2d', textSecondary:'#888888' };
@@ -415,7 +405,7 @@ function resetTheme() { store.theme = {...DEFAULT_THEME}; saveStore(store); load
 async function loadAll() {
   try {
     store = loadStore();
-    loadArticles(); loadUpdates(); loadExplores(); loadMusic(); loadTheme();
+    articles.load(); updates.load(); explores.load(); music.load(); loadTheme();
     switchTab('articles');
   } catch(e) { showToast('加载出错: '+e.message, 'error'); }
 }
