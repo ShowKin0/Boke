@@ -103,7 +103,28 @@ tr:hover td { background: rgba(255,176,192,0.04); }
           <div class="form-group"><label>摘要</label><textarea id="articleSummary" placeholder="文章摘要" rows="2"></textarea></div>
           <div class="form-group"><label>标签（逗号分隔）</label><input id="articleTags" placeholder="前端, CSS, 设计"></div>
         </div>
-        <div class="form-group"><label>内容 (支持 HTML)</label><textarea id="articleContent" placeholder="文章内容..." rows="6"></textarea></div>
+        <div class="form-group"><label>内容</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+            <select id="codeLangSelect" style="padding:4px 8px;border:1px solid rgba(0,0,0,0.08);border-radius:6px;font-size:13px;background:var(--card-bg);outline:none;">
+              <option value="">插入代码块...</option>
+              <option value="cpp">C++</option>
+              <option value="java">Java</option>
+              <option value="python">Python</option>
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="go">Go</option>
+              <option value="rust">Rust</option>
+              <option value="c">C</option>
+              <option value="html">HTML</option>
+              <option value="css">CSS</option>
+              <option value="sql">SQL</option>
+              <option value="bash">Bash</option>
+              <option value="plaintext">纯文本</option>
+            </select>
+            <button class="btn-secondary" type="button" onclick="insertCode()" style="font-size:12px;padding:4px 12px;">&lt;/&gt; 插入代码</button>
+          </div>
+          <textarea id="articleContent" placeholder="文章内容..." rows="10" style="font-family:Consolas,monospace;font-size:14px;"></textarea>
+        </div>
         <div class="form-actions">
           <button class="btn-primary" id="articleSubmitBtn" onclick="articles.save()">发布文章</button>
           <button class="btn-secondary" onclick="articles.cancel()" style="display:none" id="articleCancelBtn">取消</button>
@@ -210,7 +231,19 @@ let currentTab = 'articles';
 function showToast(msg, type) { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast '+(type||'success'); t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
 function escapeHtml(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
 function formatDate(d) { return d ? new Date(d).toLocaleDateString('zh-CN') : ''; }
-
+function insertCode() {
+  const sel = document.getElementById('codeLangSelect');
+  const lang = sel.value;
+  if (!lang) { showToast('请先选择语言', 'error'); return; }
+  const ta = document.getElementById('articleContent');
+  const label = sel.options[sel.selectedIndex].text;
+  const code = '<pre><code class="language-' + lang + '">\n  // 在此输入' + label + '代码\n</code></pre>\n';
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  ta.value = ta.value.substring(0, start) + code + ta.value.substring(end);
+  ta.focus();
+  sel.value = '';
+  showToast('代码块已插入');
+}
 function login() {
   const pw = document.getElementById('passwordInput').value.trim();
   if (!pw) { showToast('请输入密码', 'error'); return; }

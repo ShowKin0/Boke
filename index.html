@@ -429,6 +429,14 @@ body {
 .article-detail-card .content { font-size: 16px; line-height: 1.8; }
 .article-detail-card .content img { max-width: 100%; border-radius: 12px; margin: 16px 0; }
 .article-detail-card .content p { margin-bottom: 16px; }
+.article-detail-card .content pre { background: #1e1e2e; color: #cdd6f4; padding: 20px; border-radius: 12px; overflow-x: auto; font-size: 14px; line-height: 1.7; margin: 16px 0; position: relative; }
+.article-detail-card .content pre::before { content: attr(data-lang); position: absolute; top: 8px; right: 14px; font-size: 11px; color: #585b70; text-transform: uppercase; letter-spacing: 1px; }
+.article-detail-card .content pre code { background: none; padding: 0; font-family: Consolas, 'Courier New', monospace; font-size: 14px; }
+.article-detail-card .content .hl-cmt { color: #6c7086; font-style: italic; }
+.article-detail-card .content .hl-str { color: #a6e3a1; }
+.article-detail-card .content .hl-kw { color: #cba6f7; font-weight: 600; }
+.article-detail-card .content .hl-num { color: #fab387; }
+.article-detail-card .content .hl-type { color: #f9e2af; }
 </style>
 </head>
 <body>
@@ -808,6 +816,60 @@ function renderExplores(category) {
   initFadeUp();
 }
 
+// ===== 语法高亮 =====
+function highlightCode() {
+  document.querySelectorAll('.content pre code').forEach(el => {
+    const lang = (el.className.match(/language-(\w+)/) || [])[1];
+    if (!lang) return;
+    const parent = el.parentElement;
+    parent.setAttribute('data-lang', lang);
+    const code = el.textContent;
+    const kwSets = {
+      cpp: 'auto|bool|break|case|catch|class|const|continue|default|delete|do|else|enum|explicit|export|extern|false|float|for|friend|goto|if|include|inline|int|long|namespace|new|operator|override|private|protected|public|return|short|signed|sizeof|static|struct|switch|template|this|throw|true|try|typedef|typename|union|unsigned|using|virtual|void|volatile|while',
+      java: 'abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|extends|false|final|finally|float|for|goto|if|implements|import|instanceof|int|interface|long|native|new|null|package|private|protected|public|return|short|static|strictfp|super|switch|synchronized|this|throw|throws|transient|true|try|void|volatile|while',
+      python: 'and|as|assert|async|await|break|class|continue|def|del|elif|else|except|False|finally|for|from|global|if|import|in|is|lambda|None|nonlocal|not|or|pass|raise|return|self|True|try|while|with|yield',
+      javascript: 'async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|export|extends|false|finally|for|function|if|import|in|instanceof|let|new|null|of|return|static|super|switch|this|throw|true|try|typeof|undefined|var|void|while|with|yield',
+      typescript: 'async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|function|if|implements|import|in|instanceof|interface|let|new|null|of|package|private|protected|public|return|static|super|switch|this|throw|true|try|type|typeof|undefined|var|void|while|with|yield',
+      go: 'break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var',
+      rust: 'as|async|await|break|const|continue|crate|dyn|else|enum|extern|false|fn|for|if|impl|in|let|loop|match|mod|move|mut|pub|ref|return|self|Self|static|struct|super|trait|true|type|unsafe|use|where|while',
+      c: 'auto|break|case|const|continue|default|do|else|enum|extern|float|for|goto|if|include|int|long|register|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while',
+      sql: 'ADD|ALL|ALTER|AND|AS|ASC|BETWEEN|BY|CREATE|DELETE|DESC|DISTINCT|DROP|FROM|GROUP|HAVING|IN|INSERT|INTO|IS|JOIN|LEFT|LIKE|LIMIT|NOT|NULL|OR|ORDER|RIGHT|SELECT|SET|TABLE|TOP|TRUNCATE|UNION|UPDATE|VALUES|VIEW|WHERE',
+    };
+    const kw = kwSets[lang] || '';
+    const kwPattern = kw ? '\\b(' + kw.replace(/\|/g, '|') + ')\\b' : '';
+    const langTypes = {
+      cpp: 'int|float|double|char|bool|void|string|vector|map|set|list|auto|long|short|unsigned|size_t',
+      java: 'int|float|double|char|boolean|void|long|short|byte|String|Integer|Float|Double|Boolean|List|Map|Set|ArrayList|HashMap',
+      typescript: 'string|number|boolean|void|any|never|unknown|object|Array|Promise|Record',
+      go: 'int|int8|int16|int32|int64|uint|float32|float64|bool|string|byte|rune|error|map|chan|struct|interface',
+      rust: 'i32|i64|u32|u64|f32|f64|bool|char|str|String|Vec|HashMap|Option|Result|Box|Arc|Mutex',
+    };
+    const types = langTypes[lang] || '';
+    const typePattern = types ? '\\b(' + types.replace(/\|/g, '|') + ')\\b' : '';
+
+    // Tokenize: split into parts and wrap with spans
+    let parts = [];
+    let remaining = code;
+    const tokenPatterns = [
+      { re: /(\/\/[^\n]*)/g, cls: 'hl-cmt' },
+      { re: /(\/\*[\s\S]*?\*\/)/g, cls: 'hl-cmt' },
+      { re: /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, cls: 'hl-str' },
+      { re: RegExp(typePattern, 'g'), cls: 'hl-type' },
+      { re: RegExp(kwPattern, 'g'), cls: 'hl-kw' },
+      { re: (/\b(\d+(?:\.\d+)?)\b/g), cls: 'hl-num' },
+    ];
+    // Simple approach: apply patterns sequentially
+    let html = escapeHtml(code);
+    html = html.replace(/(\/\/[^\n]*)/g, '<span class="hl-cmt">$1</span>');
+    html = html.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="hl-cmt">$1</span>');
+    html = html.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, '<span class="hl-str">$1</span>');
+    if (typePattern) html = html.replace(RegExp(typePattern, 'g'), '<span class="hl-type">$1</span>');
+    if (kwPattern) html = html.replace(RegExp(kwPattern, 'g'), '<span class="hl-kw">$1</span>');
+    html = html.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="hl-num">$1</span>');
+    el.innerHTML = html;
+  });
+}
+
 // ===== 文章详情 =====
 function showArticle(id) {
   const a = articles.find(x => x.id === id);
@@ -819,6 +881,7 @@ function showArticle(id) {
     <div class="meta">${date} ${tags}</div>
     <div class="content">${a.content || ''}</div>
   `;
+  highlightCode();
   document.getElementById('articleDetail').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
