@@ -208,12 +208,6 @@ body {
 .glass-card h3 { font-size: 18px; margin-bottom: 12px; color: var(--text); }
 .glass-card .card-date { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
 .glass-card .card-summary { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
-.glass-card .media-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 12px; padding: 2px 8px;
-  background: rgba(255,176,192,0.15);
-  border-radius: 6px; margin-top: 8px;
-}
 .glass-card .card-tag {
   display: inline-block; padding: 2px 10px;
   background: rgba(135,206,235,0.15);
@@ -389,21 +383,6 @@ body {
 }
 .fade-up.visible { opacity: 1; transform: translateY(0); }
 
-/* ===== 灯箱 ===== */
-.lightbox {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.85); z-index: 2000;
-  display: none; align-items: center; justify-content: center;
-  backdrop-filter: blur(10px);
-}
-.lightbox.open { display: flex; }
-.lightbox-content { max-width: 90vw; max-height: 90vh; border-radius: 12px; }
-.lightbox-close {
-  position: absolute; top: 24px; right: 24px; width: 40px; height: 40px;
-  border-radius: 50%; border: none; background: rgba(255,255,255,0.15);
-  color: white; font-size: 20px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
 
 /* ===== 加载/空状态 ===== */
 .loading-spinner {
@@ -546,11 +525,6 @@ body {
   </div>
 </section>
 
-<!-- ===== 灯箱 ===== -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <button class="lightbox-close">✕</button>
-  <div class="lightbox-content" id="lightboxContent"></div>
-</div>
 
 <!-- ===== 文章详情弹窗 ===== -->
 <div class="article-detail" id="articleDetail">
@@ -834,23 +808,6 @@ function renderExplores(category) {
   initFadeUp();
 }
 
-// ===== 灯箱 =====
-function openLightbox(type, src) {
-  const lb = document.getElementById('lightbox');
-  const content = document.getElementById('lightboxContent');
-  lb.classList.add('open');
-  if (type === 'image') {
-    content.innerHTML = `<img src="${src}" class="lightbox-content" style="max-width:90vw;max-height:90vh;border-radius:12px;">`;
-  } else {
-    content.innerHTML = `<div style="color:white;font-size:24px;padding:40px;text-align:center;">${src}</div>`;
-  }
-}
-function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
-document.getElementById('lightbox').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeLightbox();
-});
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
-
 // ===== 文章详情 =====
 function showArticle(id) {
   const a = articles.find(x => x.id === id);
@@ -977,16 +934,6 @@ function escapeHtml(text) {
   return d.innerHTML;
 }
 
-// ===== 视频/音频互斥 =====
-document.addEventListener('play', (e) => {
-  if (e.target.tagName === 'VIDEO' || e.target.tagName === 'AUDIO') {
-    if (e.target !== audio) {
-      document.querySelectorAll('video, audio').forEach(el => {
-        if (el !== e.target && el !== audio && !el.paused) el.pause();
-      });
-    }
-  }
-}, true);
 
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', loadAll);
