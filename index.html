@@ -468,7 +468,7 @@ body {
   <button class="nav-item" data-section="articles">📝 文章</button>
   <button class="nav-item" data-section="updates">💬 动态</button>
   <button class="nav-item" data-section="explore">🔍 探索</button>
-  <a href="/admin.html" class="nav-item" style="text-decoration:none;" target="_blank">⚙️</a>
+  <a href="admin.html" class="nav-item" style="text-decoration:none;">⚙️</a>
   <div class="nav-indicator" id="indicatorTop"></div>
 </nav>
 
@@ -477,7 +477,7 @@ body {
   <button class="nav-item" data-section="articles">📝</button>
   <button class="nav-item" data-section="updates">💬</button>
   <button class="nav-item" data-section="explore">🔍</button>
-  <a href="/admin.html" class="nav-item" style="text-decoration:none;" target="_blank">⚙️</a>
+  <a href="admin.html" class="nav-item" style="text-decoration:none;">⚙️</a>
   <div class="nav-indicator" id="indicatorLeft"></div>
 </nav>
 
@@ -568,35 +568,20 @@ let currentSongIndex = 0;
 let isPlaying = false;
 const audio = new Audio();
 
-// ===== 数据获取 =====
-async function fetchData(url) {
-  try {
-    const res = await fetch(url);
-    return await res.json();
-  } catch {
-    return null;
-  }
+// ===== 从 localStorage 加载数据（纯前端，无需服务端） =====
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem('boke_data')); } catch { return null; }
 }
 
-async function loadAll() {
-  const homeData = await fetchData('/api/home');
-  if (homeData) {
-    articles = homeData.articles || [];
-    updates = homeData.updates || [];
-    musicList = homeData.music || [];
-    theme = homeData.theme || {};
-    applyTheme(theme);
+function loadAll() {
+  const data = loadStore();
+  if (data) {
+    articles = data.articles || [];
+    updates = data.updates || [];
+    explores = data.explores || [];
+    musicList = data.music || [];
+    if (data.theme) { theme = data.theme; applyTheme(theme); }
   }
-  const allArticles = await fetchData('/api/articles');
-  if (allArticles) articles = allArticles;
-  const allUpdates = await fetchData('/api/updates');
-  if (allUpdates) updates = allUpdates;
-  const allExplores = await fetchData('/api/explores');
-  if (allExplores) explores = allExplores;
-  const musicData = await fetchData('/api/music');
-  if (musicData) musicList = musicData;
-  const themeData = await fetchData('/api/theme');
-  if (themeData) { theme = themeData; applyTheme(theme); }
 
   renderHomeArticles();
   renderHomeUpdates();
