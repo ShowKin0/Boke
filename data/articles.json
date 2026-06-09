@@ -2,12 +2,9 @@
   {
     "id": "04f81154-dfe5-4095-b814-25c9427b64ec",
     "title": "Hello World",
-    "summary": "��һƪ��������",
-    "content": "<p>��ӭ�����ҵĲ���</p>",
-    "tags": [
-      "����",
-      "���"
-    ],
+    "summary": "第一篇博客文章",
+    "content": "<h2>Hello World</h2><p>欢迎来到我的博客！</p><p>这是使用 <strong>WYSIWYG</strong> 编辑器写的第一篇文章。</p><ul><li>支持<strong>粗体</strong>和<em>斜体</em></li><li>支持 <code>行内代码</code></li><li>支持代码块</li></ul><pre data-lang=\"javascript\"><code class=\"language-javascript\"><span class=\"hl-cmt\">// 控制台输出</span>\n<span class=\"hl-kw\">const</span> msg = <span class=\"hl-str\">'Hello Bōkè!'</span>;\n<span class=\"hl-builtin\">console</span>.log(msg);</code></pre><blockquote><p>生活如诗，代码如歌。</p></blockquote>",
+    "tags": ["入门", "博客"],
     "isFeatured": true,
     "createdAt": "2026-06-08T08:54:55.672Z"
   }

@@ -63,7 +63,51 @@ tr:hover td { background: rgba(255,176,192,0.04); }
 .toast.success { border-left: 3px solid #2ecc71; }
 .toast.error { border-left: 3px solid #e74c3c; }
 @keyframes toastIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 768px) { .admin-sidebar { width: 60px; padding: 16px 8px; } .admin-sidebar h2 { font-size: 0; } .admin-sidebar h2::after { content: 'B'; font-size: 20px; } .admin-nav-item { font-size: 0; padding: 10px; text-align: center; } .admin-content { margin-left: 60px; padding: 16px; } .form-row { grid-template-columns: 1fr; } .color-picker-grid { grid-template-columns: 1fr 1fr; } }
+/* ===== 富文本编辑器 ===== */
+.editor-toolbar { display:flex; gap:3px; flex-wrap:wrap; margin-bottom:6px; padding:5px 6px; background:rgba(255,255,255,0.5); border-radius:8px; border:1px solid rgba(0,0,0,0.04); align-items:center; }
+.ed-btn { width:30px; height:28px; border:1px solid rgba(0,0,0,0.06); border-radius:5px; background:white; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; color:var(--text); padding:0; }
+.ed-btn:hover { background:var(--primary); color:white; border-color:var(--primary); }
+.ed-btn.code-btn { width:auto; padding:0 10px; font-size:12px; }
+.ed-divider { width:1px; height:18px; background:rgba(0,0,0,0.08); margin:0 3px; flex-shrink:0; }
+.article-editor { min-height:260px; padding:14px 16px; border:1px solid rgba(0,0,0,0.08); border-radius:8px; font-size:15px; line-height:1.8; outline:none; background:rgba(255,255,255,0.5); transition:border 0.3s; cursor:text; overflow-y:auto; white-space:pre-wrap; word-wrap:break-word; }
+.article-editor:focus { border-color:var(--primary); }
+.article-editor:empty::before { content:attr(data-placeholder); color:#bbb; pointer-events:none; }
+.article-editor h2 { font-size:22px; margin:0.6em 0 0.3em; font-weight:700; }
+.article-editor h3 { font-size:18px; margin:0.5em 0 0.3em; font-weight:700; }
+.article-editor blockquote { margin:0.5em 0; padding:8px 16px; border-left:4px solid var(--primary); background:rgba(255,176,192,0.08); border-radius:0 6px 6px 0; color:var(--text2); }
+.article-editor ul, .article-editor ol { padding-left:1.5em; margin:0.4em 0; }
+.article-editor pre { background:#282c34; color:#abb2bf; padding:16px; border-radius:8px; overflow-x:auto; font-size:13px; line-height:1.6; margin:0.6em 0; font-family:Consolas,monospace; white-space:pre; }
+.article-editor pre code { background:none; padding:0; font-family:inherit; font-size:inherit; color:inherit; }
+.article-editor code { background:rgba(198,120,221,0.1); padding:1px 5px; border-radius:3px; font-size:0.9em; color:#c678dd; font-family:Consolas,monospace; }
+.article-editor a { color:var(--secondary); text-decoration:underline; }
+/* ===== 代码块编辑器弹窗 ===== */
+.code-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:5000; background:rgba(0,0,0,0.5); backdrop-filter:blur(6px); }
+.code-modal-inner { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:90%; max-width:720px; max-height:80vh; background:#1e1e1e; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.5); display:flex; flex-direction:column; overflow:hidden; }
+.code-modal-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:#2d2d2d; color:#ccc; font-size:14px; font-weight:600; border-bottom:1px solid #3a3a3a; }
+.code-modal-close { width:28px; height:28px; border:none; border-radius:6px; background:transparent; color:#999; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+.code-modal-close:hover { background:rgba(255,255,255,0.1); color:#fff; }
+.code-modal-body { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+.code-lang-bar { padding:8px 16px; background:#252526; border-bottom:1px solid #3a3a3a; }
+.code-lang-select { padding:4px 10px; border:1px solid #3a3a3a; border-radius:4px; font-size:12px; background:#1e1e1e; color:#ccc; outline:none; }
+.code-lang-select option { background:#1e1e1e; }
+.code-editor-atom { flex:1; display:flex; overflow:hidden; position:relative; background:#282c34; }
+.code-gutter { width:44px; flex-shrink:0; padding:14px 0; text-align:right; padding-right:10px; font-size:13px; line-height:1.6; color:#5c6370; font-family:Consolas,monospace; user-select:none; overflow:hidden; background:#282c34; }
+.code-input-wrap { flex:1; position:relative; overflow:auto; }
+.code-input { position:absolute; top:0; left:0; width:100%; height:100%; padding:14px 16px; border:none; background:transparent; color:transparent; caret-color:#fff; font-size:13px; line-height:1.6; font-family:Consolas,monospace; resize:none; outline:none; overflow:auto; white-space:pre; tab-size:4; -webkit-text-fill-color:transparent; z-index:2; }
+.code-overlay { position:absolute; top:0; left:0; width:100%; height:100%; padding:14px 16px; margin:0; border:none; background:transparent; color:#abb2bf; font-size:13px; line-height:1.6; font-family:Consolas,monospace; overflow:auto; white-space:pre; tab-size:4; pointer-events:none; z-index:1; }
+.code-overlay code { background:none; padding:0; font-family:inherit; font-size:inherit; }
+.code-overlay .hl-cmt { color:#5c6370; font-style:italic; }
+.code-overlay .hl-str { color:#98c379; }
+.code-overlay .hl-kw { color:#c678dd; font-weight:600; }
+.code-overlay .hl-num { color:#d19a66; }
+.code-overlay .hl-type { color:#e5c07b; }
+.code-overlay .hl-builtin { color:#61afef; }
+.code-modal-footer { display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; background:#252526; border-top:1px solid #3a3a3a; }
+.code-modal-footer .btn-secondary { background:#3a3a3a; color:#ccc; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; font-size:13px; transition:background 0.2s; }
+.code-modal-footer .btn-secondary:hover { background:#4a4a4a; }
+.code-modal-footer .btn-primary { background:#c678dd; color:white; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600; transition:background 0.2s; }
+.code-modal-footer .btn-primary:hover { background:#b368d0; }
+@media (max-width: 768px) { .admin-sidebar { width: 60px; padding: 16px 8px; } .admin-sidebar h2 { font-size: 0; } .admin-sidebar h2::after { content: 'B'; font-size: 20px; } .admin-nav-item { font-size: 0; padding: 10px; text-align: center; } .admin-content { margin-left: 60px; padding: 16px; } .form-row { grid-template-columns: 1fr; } .color-picker-grid { grid-template-columns: 1fr 1fr; } .code-modal-inner { width:95%; max-height:90vh; } }
 </style>
 </head>
 <body>
@@ -88,6 +132,9 @@ tr:hover td { background: rgba(255,176,192,0.04); }
     <button class="admin-nav-item" data-tab="music" onclick="switchTab('music')">🎵 音乐</button>
     <button class="admin-nav-item" data-tab="theme" onclick="switchTab('theme')">🎨 主题</button>
     <div style="flex:1;"></div>
+    <button class="admin-nav-item" onclick="exportData()" title="导出数据到 JSON 文件">📤 导出</button>
+    <button class="admin-nav-item" onclick="document.getElementById('importFileInput').click()" title="从 JSON 文件导入数据">📥 导入</button>
+    <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importData(this)">
     <button class="admin-nav-item" onclick="logout()" style="color:#e74c3c;">🚪 退出</button>
   </div>
 
@@ -104,26 +151,66 @@ tr:hover td { background: rgba(255,176,192,0.04); }
           <div class="form-group"><label>标签（逗号分隔）</label><input id="articleTags" placeholder="前端, CSS, 设计"></div>
         </div>
         <div class="form-group"><label>内容</label>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-            <select id="codeLangSelect" style="padding:4px 8px;border:1px solid rgba(0,0,0,0.08);border-radius:6px;font-size:13px;background:var(--card-bg);outline:none;">
-              <option value="">插入代码块...</option>
-              <option value="cpp">C++</option>
-              <option value="java">Java</option>
-              <option value="python">Python</option>
-              <option value="javascript">JavaScript</option>
-              <option value="typescript">TypeScript</option>
-              <option value="go">Go</option>
-              <option value="rust">Rust</option>
-              <option value="c">C</option>
-              <option value="html">HTML</option>
-              <option value="css">CSS</option>
-              <option value="sql">SQL</option>
-              <option value="bash">Bash</option>
-              <option value="plaintext">纯文本</option>
-            </select>
-            <button class="btn-secondary" type="button" onclick="insertCode()" style="font-size:12px;padding:4px 12px;">&lt;/&gt; 插入代码</button>
+          <div class="editor-toolbar">
+            <button type="button" class="ed-btn" onclick="exeCmd('bold')" title="粗体"><b>B</b></button>
+            <button type="button" class="ed-btn" onclick="exeCmd('italic')" title="斜体"><i>I</i></button>
+            <button type="button" class="ed-btn" onclick="exeCmd('strikeThrough')" title="删除线"><s>S</s></button>
+            <span class="ed-divider"></span>
+            <button type="button" class="ed-btn" onclick="exeCmd('formatBlock','h2')" title="二级标题">H2</button>
+            <button type="button" class="ed-btn" onclick="exeCmd('formatBlock','h3')" title="三级标题">H3</button>
+            <span class="ed-divider"></span>
+            <button type="button" class="ed-btn" onclick="exeCmd('insertUnorderedList')" title="无序列表">•</button>
+            <button type="button" class="ed-btn" onclick="exeCmd('insertOrderedList')" title="有序列表">1.</button>
+            <button type="button" class="ed-btn" onclick="exeCmd('formatBlock','blockquote')" title="引用">💬</button>
+            <span class="ed-divider"></span>
+            <button type="button" class="ed-btn" onclick="insertLink()" title="链接">🔗</button>
+            <button type="button" class="ed-btn" onclick="insertImage()" title="图片">📷</button>
+            <button type="button" class="ed-btn" onclick="exeCmd('insertHorizontalRule')" title="分割线">—</button>
+            <span class="ed-divider"></span>
+            <button type="button" class="ed-btn" onclick="wrapInlineCode()" title="行内代码">&lt;/&gt;</button>
+            <button type="button" class="ed-btn code-btn" onclick="openCodeModal()" title="代码块">▨ 代码块</button>
           </div>
-          <textarea id="articleContent" placeholder="文章内容..." rows="10" style="font-family:Consolas,monospace;font-size:14px;"></textarea>
+          <div id="articleContent" contenteditable="true" class="article-editor" data-placeholder="开始写作..."></div>
+          <input type="file" id="imageFileInput" accept="image/*" style="display:none">
+        </div>
+        <!-- 代码块编辑器弹窗 -->
+        <div class="code-modal" id="codeModal">
+          <div class="code-modal-inner">
+            <div class="code-modal-header">
+              <span>编辑代码块</span>
+              <button class="code-modal-close" onclick="closeCodeModal()">✕</button>
+            </div>
+            <div class="code-modal-body">
+              <div class="code-lang-bar">
+                <select id="codeLangSelect" class="code-lang-select">
+                  <option value="">选择语言</option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="python">Python</option>
+                  <option value="html">HTML</option>
+                  <option value="css">CSS</option>
+                  <option value="cpp">C++</option>
+                  <option value="java">Java</option>
+                  <option value="go">Go</option>
+                  <option value="rust">Rust</option>
+                  <option value="c">C</option>
+                  <option value="sql">SQL</option>
+                  <option value="bash">Bash</option>
+                </select>
+              </div>
+              <div class="code-editor-atom">
+                <div class="code-gutter" id="codeGutter">1</div>
+                <div class="code-input-wrap">
+                  <textarea id="codeInput" class="code-input" spellcheck="false" placeholder="在此输入代码..."></textarea>
+                  <pre class="code-overlay" id="codeOverlay"><code id="codeOverlayContent"></code></pre>
+                </div>
+              </div>
+            </div>
+            <div class="code-modal-footer">
+              <button class="btn-secondary" onclick="closeCodeModal()">取消</button>
+              <button class="btn-primary" onclick="insertCodeBlock()">插入代码块</button>
+            </div>
+          </div>
         </div>
         <div class="form-actions">
           <button class="btn-primary" id="articleSubmitBtn" onclick="articles.save()">发布文章</button>
@@ -231,18 +318,221 @@ let currentTab = 'articles';
 function showToast(msg, type) { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast '+(type||'success'); t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
 function escapeHtml(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
 function formatDate(d) { return d ? new Date(d).toLocaleDateString('zh-CN') : ''; }
-function insertCode() {
-  const sel = document.getElementById('codeLangSelect');
-  const lang = sel.value;
-  if (!lang) { showToast('请先选择语言', 'error'); return; }
-  const ta = document.getElementById('articleContent');
-  const label = sel.options[sel.selectedIndex].text;
-  const code = '<pre><code class="language-' + lang + '">\n  // 在此输入' + label + '代码\n</code></pre>\n';
-  const start = ta.selectionStart, end = ta.selectionEnd;
-  ta.value = ta.value.substring(0, start) + code + ta.value.substring(end);
-  ta.focus();
-  sel.value = '';
+function exeCmd(cmd, val) {
+  const editor = document.getElementById('articleContent');
+  editor.focus();
+  if (cmd === 'formatBlock') {
+    // 处理标题/引用 — 用<p>包裹避免整段替换
+    document.execCommand('formatBlock', false, val);
+  } else {
+    document.execCommand(cmd, false, val || null);
+  }
+}
+function insertLink() {
+  const editor = document.getElementById('articleContent'); editor.focus();
+  const url = prompt('输入链接 URL:', 'https://');
+  if (url) document.execCommand('createLink', false, url);
+}
+function insertImage() {
+  const editor = document.getElementById('articleContent'); editor.focus();
+  const input = document.getElementById('imageFileInput');
+  input.value = ''; // 重置以便重复选同一文件
+  input.click();
+}
+// 图片文件选择回调
+document.getElementById('imageFileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('图片超过 5MB 限制', 'error');
+    this.value = ''; return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const editor = document.getElementById('articleContent');
+    editor.focus();
+    const img = `<img src="${ev.target.result}" alt="${file.name}" style="max-width:100%;border-radius:8px;margin:0.5em 0;">`;
+    document.execCommand('insertHTML', false, img);
+    showToast('图片已插入');
+  };
+  reader.onerror = function() { showToast('图片读取失败', 'error'); };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+function wrapInlineCode() {
+  const editor = document.getElementById('articleContent'); editor.focus();
+  const sel = window.getSelection();
+  if (!sel.rangeCount || sel.isCollapsed) {
+    // 没选中文字：插入占位代码并选中
+    const range = sel.getRangeAt(0);
+    const code = document.createElement('code');
+    code.textContent = 'code';
+    range.insertNode(code);
+    range.selectNodeContents(code);
+    sel.removeAllRanges(); sel.addRange(range);
+    return;
+  }
+  document.execCommand('insertHTML', false, '<code>' + sel.toString() + '</code>');
+}
+// ===== 代码块弹窗 =====
+function openCodeModal() {
+  document.getElementById('codeModal').style.display = 'block';
+  document.getElementById('codeInput').value = '';
+  document.getElementById('codeOverlayContent').innerHTML = '';
+  document.getElementById('codeGutter').textContent = '1';
+  document.getElementById('codeLangSelect').value = '';
+  document.getElementById('codeInput').focus();
+}
+function closeCodeModal() {
+  document.getElementById('codeModal').style.display = 'none';
+}
+// 代码语法高亮渲染
+function highlightCodeText(code, lang) {
+  if (!code) return '';
+  let html = escapeHtml(code);
+  const kwSets = {
+    javascript: 'async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|export|extends|false|finally|for|function|if|import|in|instanceof|let|new|null|of|return|static|super|switch|this|throw|true|try|typeof|undefined|var|void|while|with|yield',
+    typescript: 'async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|function|if|implements|import|in|instanceof|interface|let|new|null|of|package|private|protected|public|return|static|super|switch|this|throw|true|try|type|typeof|undefined|var|void|while|with|yield',
+    python: 'and|as|assert|async|await|break|class|continue|def|del|elif|else|except|False|finally|for|from|global|if|import|in|is|lambda|None|nonlocal|not|or|pass|raise|return|self|True|try|while|with|yield',
+    cpp: 'auto|bool|break|case|catch|class|const|continue|default|delete|do|else|enum|explicit|export|extern|false|float|for|friend|goto|if|include|inline|int|long|namespace|new|operator|override|private|protected|public|return|short|signed|sizeof|static|struct|switch|template|this|throw|true|try|typedef|typename|union|unsigned|using|virtual|void|volatile|while',
+    java: 'abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|extends|false|final|finally|float|for|goto|if|implements|import|instanceof|int|interface|long|native|new|null|package|private|protected|public|return|short|static|strictfp|super|switch|synchronized|this|throw|throws|transient|true|try|void|volatile|while',
+    go: 'break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var',
+    rust: 'as|async|await|break|const|continue|crate|dyn|else|enum|extern|false|fn|for|if|impl|in|let|loop|match|mod|move|mut|pub|ref|return|self|Self|static|struct|super|trait|true|type|unsafe|use|where|while',
+    sql: 'ADD|ALL|ALTER|AND|AS|ASC|BETWEEN|BY|CREATE|DELETE|DESC|DISTINCT|DROP|FROM|GROUP|HAVING|IN|INSERT|INTO|IS|JOIN|LEFT|LIKE|LIMIT|NOT|NULL|OR|ORDER|RIGHT|SELECT|SET|TABLE|TOP|TRUNCATE|UNION|UPDATE|VALUES|VIEW|WHERE',
+    html: 'html|head|body|div|span|p|a|img|ul|ol|li|table|tr|td|th|form|input|button|select|option|textarea|h1|h2|h3|h4|h5|h6|br|hr|meta|link|script|style|section|nav|header|footer|main|article|aside|figure|figcaption|blockquote|code|pre|em|strong|i|b|u|s|mark|small|sub|sup',
+    css: 'color|background|margin|padding|border|font|text|display|position|width|height|top|left|right|bottom|flex|grid|align|justify|transform|transition|animation|overflow|opacity|z-index|box-shadow|filter|backdrop-filter',
+  };
+  const typeSets = {
+    javascript: 'string|number|boolean|null|undefined|void|any|never|unknown|object|symbol|bigint|Array|Promise|Map|Set|Function',
+    typescript: 'string|number|boolean|null|undefined|void|any|never|unknown|object|symbol|bigint|Array|Promise|Map|Set|Record|Partial|Required|Pick|Omit|Exclude|ReturnType',
+    python: 'int|float|bool|str|list|dict|tuple|set|None|True|False|bytes|range|map|filter|type|object',
+    cpp: 'int|float|double|char|bool|void|string|vector|map|set|list|auto|long|short|unsigned|size_t|int8_t|int16_t|int32_t|int64_t|nullptr',
+    java: 'int|float|double|char|boolean|void|long|short|byte|String|Integer|Float|Double|Boolean|List|Map|Set|ArrayList|HashMap|Object|Class|Thread',
+    go: 'int|int8|int16|int32|int64|uint|float32|float64|bool|string|byte|rune|error|map|chan|struct|interface|slice',
+    rust: 'i32|i64|u32|u64|f32|f64|bool|char|str|String|Vec|HashMap|Option|Result|Box|Arc|Mutex|dyn|impl',
+  };
+  const builtinSets = {
+    javascript: 'console|Math|JSON|Promise|Symbol|Reflect|Proxy|RegExp|Date|Error|SyntaxError|TypeError|RangeError|ReferenceError|EvalError|URIError|parseInt|parseFloat|setTimeout|setInterval|clearTimeout|clearInterval|fetch|require|module|exports|process|global|Buffer|ArrayBuffer|Int8Array|Uint8Array|Int16Array|Uint16Array|Int32Array|Uint32Array|Float32Array|Float64Array|BigInt|BigInt64Array|BigUint64Array|WeakMap|WeakSet|WeakRef|FinalizationRegistry|Atomics|SharedArrayBuffer',
+    typescript: 'console|Math|JSON|Promise|Symbol|Reflect|Proxy|RegExp|Date|Error|parseInt|parseFloat|setTimeout|setInterval|clearTimeout|clearInterval|fetch|ArrayBuffer|Map|Set|WeakMap|WeakSet',
+    python: 'print|len|range|int|float|str|list|dict|tuple|set|type|open|input|map|filter|zip|enumerate|sorted|reversed|min|max|sum|abs|round|isinstance|hasattr|getattr|setattr|super|object|property|staticmethod|classmethod|iter|next|all|any|bin|bool|bytearray|bytes|callable|chr|classmethod|compile|complex|delattr|dir|divmod|eval|exec|exit|format|frozenset|globals|hash|help|hex|id|issubclass|iter|locals|memoryview|oct|ord|pow|quit|repr|reversed|round|setattr|slice|sorted|staticmethod|str|sum|super|tuple|type|vars|zip|__import__',
+    cpp: 'cout|cin|endl|printf|scanf|fprintf|sprintf|fscanf|fopen|fclose|fgets|fputs|fread|fwrite|fseek|ftell|rewind|remove|rename|tmpfile|tmpnam|stdin|stdout|stderr|NULL|nullptr|true|false|std|make_shared|make_unique|static_cast|dynamic_cast|reinterpret_cast|const_cast|std::cout|std::cin|std::endl|std::string|std::vector|std::map|std::set|std::list|std::queue|std::stack|std::deque|std::pair|std::make_pair',
+    java: 'System|Math|Arrays|Collections|Objects|StringBuilder|StringBuffer|Pattern|Matcher|Comparator|Comparable|Iterator|Iterable|Scanner|BufferedReader|InputStreamReader|FileReader|FileWriter|BufferedWriter|PrintWriter|FileInputStream|FileOutputStream|ObjectInputStream|ObjectOutputStream|ClassLoader|Runtime|System|Thread|Runnable|Callable|Future|Executor|Executors|ThreadPoolExecutor|ScheduledExecutorService|Optional|Stream|Collectors|Function|Predicate|Consumer|Supplier|BiFunction',
+    go: 'fmt|print|println|printf|sprintf|Sprintf|Fprintf|Sprintln|Sprint|append|copy|make|new|close|delete|panic|recover|error|len|cap|complex|real|imag|iota|nil|true|false|iota|string|bool|int|int8|int16|int32|int64|uint|float32|float64|byte|rune|uintptr|complex64|complex128',
+    rust: 'println!|print!|format!|write!|writeln!|eprint!|eprintln!|vec!|Some|None|Ok|Err|String|Vec|HashMap|Box|Arc|Mutex|Rc|Cell|RefCell|Result|Option|Iterator|into_iter|iter|map|collect|unwrap|expect|clone|copied|as_ref|as_mut|take|borrow|borrow_mut|try!|panic!|unreachable!|unimplemented!|todo!|dbg!|assert!|assert_eq!|assert_ne!|debug_assert!',
+  };
+  html = html.replace(/(\/\/[^\n]*)/g, '<span class="hl-cmt">$1</span>');
+  html = html.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="hl-cmt">$1</span>');
+  html = html.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, '<span class="hl-str">$1</span>');
+  const kw = kwSets[lang];
+  if (kw) {
+    const kwRe = new RegExp('\\b(' + kw.replace(/\|/g, '|') + ')\\b', 'g');
+    html = html.replace(kwRe, '<span class="hl-kw">$1</span>');
+  }
+  const types = typeSets[lang];
+  if (types) {
+    const typeRe = new RegExp('\\b(' + types.replace(/\|/g, '|') + ')\\b', 'g');
+    html = html.replace(typeRe, '<span class="hl-type">$1</span>');
+  }
+  const builtins = builtinSets[lang];
+  if (builtins) {
+    const builtinRe = new RegExp('\\b(' + builtins.replace(/\|/g, '|') + ')\\b', 'g');
+    html = html.replace(builtinRe, '<span class="hl-builtin">$1</span>');
+  }
+  html = html.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="hl-num">$1</span>');
+  return html;
+}
+function updateCodePreview() {
+  const ta = document.getElementById('codeInput');
+  const code = ta.value;
+  const lang = document.getElementById('codeLangSelect').value;
+  // 更新行号
+  const lines = code.split('\n').length;
+  let gutterHtml = '';
+  for (let i = 1; i <= lines; i++) gutterHtml += i + '\n';
+  document.getElementById('codeGutter').textContent = gutterHtml;
+  // 更新高亮
+  document.getElementById('codeOverlayContent').innerHTML = highlightCodeText(code, lang);
+  // 同步滚动
+  document.getElementById('codeOverlay').scrollTop = ta.scrollTop;
+}
+function insertCodeBlock() {
+  const code = document.getElementById('codeInput').value;
+  if (!code.trim()) { showToast('请输入代码', 'error'); return; }
+  const lang = document.getElementById('codeLangSelect').value;
+  const editor = document.getElementById('articleContent');
+  editor.focus();
+  // 用 pre 标签包装代码块
+  const highlighted = highlightCodeText(code, lang);
+  const langAttr = lang ? ` data-lang="${lang}"` : '';
+  const html = `<pre${langAttr}><code class="language-${lang || 'plaintext'}">${highlighted}</code></pre>`;
+  document.execCommand('insertHTML', false, html + '<p><br></p>');
+  closeCodeModal();
   showToast('代码块已插入');
+}
+// 代码输入同步滚动
+document.addEventListener('DOMContentLoaded', () => {
+  const codeInput = document.getElementById('codeInput');
+  if (codeInput) {
+    codeInput.addEventListener('input', updateCodePreview);
+    codeInput.addEventListener('scroll', function() {
+      document.getElementById('codeOverlay').scrollTop = this.scrollTop;
+    });
+  }
+  const langSelect = document.getElementById('codeLangSelect');
+  if (langSelect) langSelect.addEventListener('change', updateCodePreview);
+});
+// ===== 数据导出/导入 =====
+function exportData() {
+  const store = loadStore();
+  // 拆成每个数据类型的文件，逐一导出
+  const entries = [
+    { name: 'articles.json', data: store.articles || [] },
+    { name: 'updates.json', data: store.updates || [] },
+    { name: 'explores.json', data: store.explores || [] },
+    { name: 'music.json', data: store.music || [] },
+    { name: 'theme.json', data: store.theme || getDefaultStore().theme },
+  ];
+  // 打包成一个 ZIP 风格的单一 JSON（浏览器无法直接批量下载文件夹）
+  // 改为导出单文件 boke-data.json（兼容后续导入）
+  const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'boke-data.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('已导出 boke-data.json，请替换到 data/ 目录');
+}
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      let store;
+      if (Array.isArray(data) && data[0] && data[0].name) {
+        // 新格式: [{name, data}, ...]
+        store = getDefaultStore();
+        data.forEach(item => {
+          const key = item.name.replace('.json', '');
+          if (key === 'theme') store.theme = item.data;
+          else if (Array.isArray(item.data)) store[key] = item.data;
+        });
+      } else if (data.articles || data.updates) {
+        // 兼容旧格式: {articles, updates, ...}
+        store = { ...getDefaultStore(), ...data };
+      } else {
+        showToast('无法识别的数据格式', 'error'); return;
+      }
+      saveStore(store);
+      showToast('数据已导入！页面即将刷新');
+      setTimeout(() => location.reload(), 1000);
+    } catch(err) {
+      showToast('导入失败: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
 }
 function login() {
   const pw = document.getElementById('passwordInput').value.trim();
@@ -272,7 +562,11 @@ function createCRUD(cfg) {
     if (!item) return;
     cfg.fields.forEach(f => {
       const el = document.getElementById(f.id);
-      if (el) el.value = f.get ? f.get(item) : (item[f.prop] || '');
+      if (el) {
+        const val = f.get ? f.get(item) : (item[f.prop] || '');
+        if (f.set) f.set(el, val);
+        else el.value = val;
+      }
     });
     document.getElementById(cfg.editId).value = id;
     if (cfg.formTitleId) document.getElementById(cfg.formTitleId).textContent = cfg.editTitle;
@@ -281,7 +575,13 @@ function createCRUD(cfg) {
     if (cfg.onEdit) cfg.onEdit(item);
   }
   function cancel() {
-    cfg.fields.forEach(f => { const el = document.getElementById(f.id); if (el) el.value = ''; });
+    cfg.fields.forEach(f => {
+      const el = document.getElementById(f.id);
+      if (el) {
+        if (f.set) f.set(el, '');
+        else el.value = '';
+      }
+    });
     if (cfg.onCancel) cfg.onCancel();
     document.getElementById(cfg.editId).value = '';
     if (cfg.formTitleId) document.getElementById(cfg.formTitleId).textContent = cfg.addTitle;
@@ -317,13 +617,13 @@ const articles = createCRUD({
     { id: 'articleTitle', prop: 'title' },
     { id: 'articleTags', prop: 'tags', get: (a) => (a.tags||[]).join(', ') },
     { id: 'articleSummary', prop: 'summary' },
-    { id: 'articleContent', prop: 'content' },
+    { id: 'articleContent', prop: 'content', set: (el, v) => { el.innerHTML = v; } },
   ],
   buildData: () => ({
     title: document.getElementById('articleTitle').value.trim()||'无标题',
     tags: document.getElementById('articleTags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
     summary: document.getElementById('articleSummary').value.trim(),
-    content: document.getElementById('articleContent').value,
+    content: document.getElementById('articleContent').innerHTML,
   }),
   render: (items) => {
     const tbody = document.getElementById('articlesTableBody');
@@ -435,7 +735,7 @@ function getThemeData() { return { bgColor:document.getElementById('themeBg').va
 function saveTheme() { store.theme = getThemeData(); saveStore(store); showToast('主题已保存'); }
 function resetTheme() { store.theme = {...DEFAULT_THEME}; saveStore(store); loadTheme(); showToast('已重置'); }
 
-async function loadAll() {
+function loadAll() {
   try {
     store = loadStore();
     articles.load(); updates.load(); explores.load(); music.load(); loadTheme();
