@@ -560,6 +560,49 @@ body {
   <div class="lightbox-content" id="lightboxContent"></div>
 </div>
 
+<!-- ===== 文章详情弹窗 ===== -->
+<div class="article-detail" id="articleDetail">
+  <div class="article-detail-overlay" onclick="closeArticle()"></div>
+  <div class="article-detail-card">
+    <button class="article-detail-close" onclick="closeArticle()">✕</button>
+    <div id="articleDetailContent"></div>
+  </div>
+</div>
+
+<style>
+.article-detail {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 3000; display: none;
+}
+.article-detail.open { display: block; }
+.article-detail-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+}
+.article-detail-card {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 90%; max-width: 720px; max-height: 85vh;
+  background: var(--card-bg); backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px; border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  padding: 40px; overflow-y: auto;
+}
+.article-detail-close {
+  position: absolute; top: 16px; right: 16px; width: 36px; height: 36px;
+  border-radius: 50%; border: none; background: rgba(0,0,0,0.06);
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+.article-detail-close:hover { background: rgba(0,0,0,0.12); }
+.article-detail-card h1 { font-size: 28px; margin-bottom: 12px; }
+.article-detail-card .meta { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+.article-detail-card .content { font-size: 16px; line-height: 1.8; }
+.article-detail-card .content img { max-width: 100%; border-radius: 12px; margin: 16px 0; }
+.article-detail-card .content p { margin-bottom: 16px; }
+</style>
+
 <script>
 // ===== 状态管理 =====
 let articles = [], updates = [], explores = [], musicList = [], theme = {};
@@ -568,7 +611,8 @@ let currentSongIndex = 0;
 let isPlaying = false;
 const audio = new Audio();
 
-// ===== 从 localStorage 加载数据（纯前端，无需服务端） =====
+
+// ===== 从 localStorage 加载数据 =====
 function loadStore() {
   try { return JSON.parse(localStorage.getItem('boke_data')); } catch { return null; }
 }
@@ -764,17 +808,14 @@ function renderArticles() {
   let html = '';
   // 置顶/首篇
   const featured = articles[0];
-  const fMedia = featured.mediaList && featured.mediaList.length
-    ? featured.mediaList.map(m => m.type === 'video' ? '🎬' : m.type === 'audio' ? '🎵' : '🖼️').join(' ') : '';
-  html += `<div class="article-featured fade-up" onclick="openLightbox('text','${featured.title||''}')">
-    <div class="article-featured-cover">${fMedia || '📰'}</div>
-    <div class="article-featured-body">
+  html += `<div class="article-featured fade-up">
+    <div class="article-featured-cover">📰</div>
+    <div class="article-featured-body" onclick="showArticle('${featured.id}')">
       <h2>${featured.title || '无标题'}</h2>
       <p>${featured.summary || '暂无摘要'}</p>
       <div class="meta">
         ${featured.createdAt ? new Date(featured.createdAt).toLocaleDateString('zh-CN') : ''}
         ${featured.tags ? featured.tags.map(t => `<span class="card-tag">${t}</span>`).join('') : ''}
-        ${fMedia ? `<span class="media-badge">${fMedia}</span>` : ''}
       </div>
     </div>
   </div>`;
@@ -784,16 +825,12 @@ function renderArticles() {
   if (rest.length) {
     html += '<div class="articles-grid" style="margin-top:24px;">';
     rest.forEach(a => {
-      const badges = (a.mediaList && a.mediaList.length) ? a.mediaList.map(m =>
-        m.type === 'video' ? '🎬' : m.type === 'audio' ? '🎵' : '🖼️'
-      ).join(' ') : '';
-      html += `<div class="glass-card fade-up">
-        <div class="article-cover">${badges || '📰'}</div>
+      html += `<div class="glass-card fade-up" onclick="showArticle('${a.id}')" style="cursor:pointer;">
+        <div class="article-cover">📰</div>
         <h3>${a.title || '无标题'}</h3>
         <div class="card-date">${a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN') : ''}</div>
         <div class="card-summary">${(a.summary || '').substring(0, 80)}${(a.summary||'').length > 80 ? '...' : ''}</div>
         ${a.tags ? a.tags.map(t => `<span class="card-tag">${t}</span>`).join('') : ''}
-        ${badges ? `<div class="media-badge">${badges}</div>` : ''}
       </div>`;
     });
     html += '</div>';
@@ -809,20 +846,16 @@ function renderUpdates() {
     container.innerHTML = `<div class="empty-state"><div class="icon">💬</div><p>暂无动态</p></div>`;
     return;
   }
-  container.innerHTML = updates.map(u => {
-    const mediaHtml = renderMediaList(u.mediaList);
-    return `<div class="update-card fade-up">
-      <div class="update-header">
-        <div class="update-avatar">👤</div>
-        <div>
-          <div class="update-name">站主</div>
-          <div class="update-time">${u.createdAt ? new Date(u.createdAt).toLocaleString('zh-CN') : ''}</div>
-        </div>
+  container.innerHTML = updates.map(u => `<div class="update-card fade-up">
+    <div class="update-header">
+      <div class="update-avatar">👤</div>
+      <div>
+        <div class="update-name">站主</div>
+        <div class="update-time">${u.createdAt ? new Date(u.createdAt).toLocaleString('zh-CN') : ''}</div>
       </div>
-      <div class="update-content">${escapeHtml(u.content || '')}</div>
-      ${mediaHtml}
-    </div>`;
-  }).join('');
+    </div>
+    <div class="update-content">${escapeHtml(u.content || '')}</div>
+  </div>`).join('');
   initFadeUp();
 }
 
@@ -834,55 +867,19 @@ function renderExplores(category) {
     container.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🔍</div><p>暂无探索项目</p></div>`;
     return;
   }
-  container.innerHTML = filtered.map(e => {
-    let mediaHtml = '';
-    if (e.previewMedia) {
-      if (e.previewMedia.type === 'video') {
-        mediaHtml = `<div class="explore-media">
-          <video src="${e.previewMedia.url}" poster="${e.previewMedia.cover || ''}" controls preload="metadata"></video>
-        </div>`;
-      } else if (e.previewMedia.type === 'image') {
-        mediaHtml = `<div class="explore-media"><img src="${e.previewMedia.url}" alt="${e.title}" loading="lazy"></div>`;
-      }
-    }
+  // eslint-disable-next-line
+  filtered.forEach(e => {
     const categoryLabel = e.category === 'website' ? '🌐 网站推荐' : e.category === 'source' ? '📦 源码' : '🎬 学习视频';
-    return `<a class="explore-item fade-up" href="${e.url || '#'}" target="_blank" rel="noopener">
+    html += `<a class="explore-item fade-up" href="${e.url || '#'}" target="_blank" rel="noopener">
       <span class="icon">${e.icon || '🔗'}</span>
       <h4>${e.title || ''}</h4>
       <p>${e.description || ''}</p>
       ${mediaHtml}
       <span class="explore-category">${categoryLabel}</span>
     </a>`;
-  }).join('');
+  });
+  container.innerHTML = html;
   initFadeUp();
-}
-
-// ===== 多媒体渲染 =====
-function renderMediaList(mediaList) {
-  if (!mediaList || !mediaList.length) return '';
-  const images = mediaList.filter(m => m.type === 'image');
-  const audios = mediaList.filter(m => m.type === 'audio');
-  const videos = mediaList.filter(m => m.type === 'video');
-  let html = '';
-  if (images.length) {
-    const cls = `update-media update-media-${Math.min(images.length, 9)}`;
-    html += `<div class="${cls}">`;
-    images.forEach(img => {
-      html += `<img src="${img.url}" alt="${img.alt || ''}" loading="lazy"
-        onclick="event.stopPropagation();openLightbox('image','${img.url}')">`;
-    });
-    html += '</div>';
-  }
-  audios.forEach(a => {
-    html += `<div style="margin-top:8px;"><audio src="${a.url}" controls style="width:100%;border-radius:8px;"></audio></div>`;
-  });
-  videos.forEach(v => {
-    html += `<div style="margin-top:8px;">
-      <video src="${v.url}" controls preload="metadata" style="width:100%;border-radius:8px;max-height:400px;"
-        poster="${v.cover || ''}"></video>
-    </div>`;
-  });
-  return html;
 }
 
 // ===== 灯箱 =====
@@ -901,6 +898,30 @@ document.getElementById('lightbox').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeLightbox();
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+
+// ===== 文章详情 =====
+function showArticle(id) {
+  const a = articles.find(x => x.id === id);
+  if (!a) return;
+  const tags = a.tags ? a.tags.map(t => `<span class="card-tag" style="display:inline-block;padding:2px 12px;background:rgba(135,206,235,0.15);color:var(--secondary);border-radius:6px;font-size:13px;margin-right:4px;">${t}</span>`).join('') : '';
+  const date = a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN', {year:'numeric',month:'long',day:'numeric'}) : '';
+  document.getElementById('articleDetailContent').innerHTML = `
+    <h1>${escapeHtml(a.title || '')}</h1>
+    <div class="meta">${date} ${tags}</div>
+    <div class="content">${a.content || ''}</div>
+  `;
+  document.getElementById('articleDetail').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeArticle() {
+  document.getElementById('articleDetail').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('articleDetail').addEventListener('click', (e) => {
+  if (e.target.closest('.article-detail-card')) return;
+  closeArticle();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeArticle(); });
 
 // ===== 音乐播放器 =====
 function renderPlaylist() {
