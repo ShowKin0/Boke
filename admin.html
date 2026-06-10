@@ -184,7 +184,7 @@ tr:hover td { background: rgba(255,176,192,0.04); }
               <div class="code-editor-atom">
                 <div class="code-gutter" id="codeGutter">1</div>
                 <div class="code-input-wrap">
-                  <textarea id="codeInput" class="code-input" spellcheck="false" placeholder="在此输入代码..."></textarea>
+                  <textarea id="codeInput" class="code-input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" data-gramm="false" placeholder="在此输入代码..."></textarea>
                   <pre class="code-overlay" id="codeOverlay"><code id="codeOverlayContent"></code></pre>
                 </div>
               </div>
@@ -529,7 +529,11 @@ document.getElementById('musicCoverInput').addEventListener('change', function(e
 function showCoverPreview(url) {
   const preview = document.getElementById('musicCoverPreview');
   preview.style.display = 'block';
-  preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`;
+  preview.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = url;
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
+  preview.appendChild(img);
 }
 // 代码语法高亮渲染
 function highlightCodeText(code, lang) {
@@ -565,25 +569,33 @@ function highlightCodeText(code, lang) {
     go: 'fmt|print|println|printf|sprintf|Sprintf|Fprintf|Sprintln|Sprint|append|copy|make|new|close|delete|panic|recover|error|len|cap|complex|real|imag|iota|nil|true|false|iota|string|bool|int|int8|int16|int32|int64|uint|float32|float64|byte|rune|uintptr|complex64|complex128',
     rust: 'println!|print!|format!|write!|writeln!|eprint!|eprintln!|vec!|Some|None|Ok|Err|String|Vec|HashMap|Box|Arc|Mutex|Rc|Cell|RefCell|Result|Option|Iterator|into_iter|iter|map|collect|unwrap|expect|clone|copied|as_ref|as_mut|take|borrow|borrow_mut|try!|panic!|unreachable!|unimplemented!|todo!|dbg!|assert!|assert_eq!|assert_ne!|debug_assert!',
   };
+  // 先处理注释和字符串（它们在 HTML 标签里，后面的匹配要跳过标签）
   html = html.replace(/(\/\/[^\n]*)/g, '<span class="hl-cmt">$1</span>');
   html = html.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="hl-cmt">$1</span>');
   html = html.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, '<span class="hl-str">$1</span>');
+  // 匹配关键词/类型/内置函数/数字时跳过已生成的 HTML 标签
+  function replaceOutsideHTML(re, fn) {
+    return html.replace(/(<[^>]*>)|(\b\w+\b)/g, (m, tag, word) => {
+      if (tag) return tag; // 保留已有 HTML 不动
+      return fn(word);
+    });
+  }
   const kw = kwSets[lang];
   if (kw) {
-    const kwRe = new RegExp('\\b(' + kw.replace(/\|/g, '|') + ')\\b', 'g');
-    html = html.replace(kwRe, '<span class="hl-kw">$1</span>');
+    const words = new Set(kw.split('|'));
+    html = replaceOutsideHTML(null, w => words.has(w) ? `<span class="hl-kw">${w}</span>` : w);
   }
   const types = typeSets[lang];
   if (types) {
-    const typeRe = new RegExp('\\b(' + types.replace(/\|/g, '|') + ')\\b', 'g');
-    html = html.replace(typeRe, '<span class="hl-type">$1</span>');
+    const words = new Set(types.split('|'));
+    html = replaceOutsideHTML(null, w => words.has(w) ? `<span class="hl-type">${w}</span>` : w);
   }
   const builtins = builtinSets[lang];
   if (builtins) {
-    const builtinRe = new RegExp('\\b(' + builtins.replace(/\|/g, '|') + ')\\b', 'g');
-    html = html.replace(builtinRe, '<span class="hl-builtin">$1</span>');
+    const words = new Set(builtins.split('|'));
+    html = replaceOutsideHTML(null, w => words.has(w) ? `<span class="hl-builtin">${w}</span>` : w);
   }
-  html = html.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="hl-num">$1</span>');
+  html = replaceOutsideHTML(null, w => /^\d+(?:\.\d+)?$/.test(w) ? `<span class="hl-num">${w}</span>` : w);
   return html;
 }
 function updateCodePreview() {
@@ -621,6 +633,17 @@ document.addEventListener('DOMContentLoaded', () => {
     codeInput.addEventListener('input', updateCodePreview);
     codeInput.addEventListener('scroll', function() {
       document.getElementById('codeOverlay').scrollTop = this.scrollTop;
+    });
+    // Tab 键插入空格，不跳转焦点
+    codeInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = this.selectionStart;
+        const end = this.selectionEnd;
+        this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
+        this.selectionStart = this.selectionEnd = start + 2;
+        updateCodePreview();
+      }
     });
   }
   const langSelect = document.getElementById('codeLangSelect');
@@ -861,7 +884,7 @@ const explores = createCRUD({
     const tbody = document.getElementById('exploresTableBody');
     const labels = { website: '🌐 网站', source: '📦 源码', video: '🎬 视频' };
     if (!items.length) { tbody.innerHTML = '<tr><td colspan="3" class="table-empty">暂无项目</td></tr>'; return; }
-    tbody.innerHTML = items.map(e => `<tr><td>${e.icon||'🔗'} ${escapeHtml(e.title||'')}</td><td>${labels[e.category]||e.category}</td><td><button class="btn-sm edit" onclick="explores.edit('${e.id}')">编辑</button><button class="btn-sm del" onclick="explores.delete('${e.id}')">删除</button></td></tr>`).join('');
+    tbody.innerHTML = items.map(e => `<tr><td>${escapeHtml(e.icon||'🔗')} ${escapeHtml(e.title||'')}</td><td>${labels[e.category]||e.category}</td><td><button class="btn-sm edit" onclick="explores.edit('${e.id}')">编辑</button><button class="btn-sm del" onclick="explores.delete('${e.id}')">删除</button></td></tr>`).join('');
   },
 });
 
@@ -927,7 +950,6 @@ function loadAll() {
   } catch(e) { showToast('加载出错: '+e.message, 'error'); }
 }
 window.onerror = function(msg, url, line) { showToast('页面错误: '+msg+' (行'+line+')', 'error'); return true; };
-document.addEventListener('DOMContentLoaded', ()=>{});
 </script>
 </body>
 </html>

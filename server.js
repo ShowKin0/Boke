@@ -38,14 +38,22 @@ const MIME = {
 
 // ===== 工具函数 =====
 
-/** 解析请求体 JSON */
+/** 解析请求体 JSON（限制 25MB） */
+const MAX_BODY = 25 * 1024 * 1024;
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let raw = '';
-    req.on('data', chunk => raw += chunk);
+    let size = 0;
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > MAX_BODY) {
+        req.destroy(new Error('请求体超过 25MB 限制'));
+      }
+      raw += chunk;
+    });
     req.on('end', () => {
       try { resolve(JSON.parse(raw)); }
-      catch { resolve(raw); }
+      catch { reject(new Error('JSON 格式错误')); }
     });
     req.on('error', reject);
   });
@@ -279,7 +287,7 @@ const server = http.createServer(async (req, res) => {
     serveStatic(req, res);
   } catch (err) {
     console.error('[ERROR]', err.message);
-    sendError(res, 500, '服务器内部错误');
+    if (!res.headersSent) sendError(res, 500, err.message || '服务器内部错误');
   }
 });
 
