@@ -1,6 +1,10 @@
 {
   "name": "boke",
-  "version": "2.0.0",
-  "description": "Personal blog - pure frontend, no server needed",
-  "private": true
+  "version": "2.1.0",
+  "description": "Personal blog - data persists in data/*.json files",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  }
 }

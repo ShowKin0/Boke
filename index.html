@@ -596,11 +596,23 @@ function applyData(data) {
 }
 
 async function loadAll() {
-  // 1. 优先 localStorage
+  // 1. 优先从服务器 API 加载（数据直接来自 data/*.json 文件）
+  try {
+    const res = await fetch('/api/data');
+    if (res.ok) {
+      const data = await res.json();
+      // 同步到 localStorage 作为缓存
+      localStorage.setItem('boke_data', JSON.stringify(data));
+      applyData(data);
+      return;
+    }
+  } catch {}
+
+  // 2. 次选 localStorage
   const local = loadStore();
   if (local) { applyData(local); return; }
 
-  // 2. 首次访问：尝试从 data/*.json 加载（需要 HTTP 方式打开）
+  // 3. 首次访问：尝试从 data/*.json 加载（需要 HTTP 方式打开）
   try {
     const files = ['articles', 'updates', 'explores', 'music', 'theme'];
     const data = {};
@@ -616,7 +628,7 @@ async function loadAll() {
     }
   } catch {}
 
-  // 3. 都没数据，渲染空白状态
+  // 4. 都没数据，渲染空白状态
   applyData(null);
 }
 
