@@ -270,9 +270,6 @@ body {
 /* ===== 文章区 杂志式 ===== */
 .article-featured {
   grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 24px;
   background: var(--card-bg);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
@@ -281,16 +278,9 @@ body {
   box-shadow: var(--shadow);
   overflow: hidden;
   transition: all 0.4s ease;
-  cursor: pointer;
 }
 .article-featured:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(0,0,0,0.12); }
-.article-featured-cover {
-  height: 100%; min-height: 280px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 48px;
-}
-.article-featured-body { padding: 32px 32px 32px 0; }
+.article-featured-body { padding: 32px; }
 .article-featured-body h2 { font-size: 24px; margin-bottom: 12px; color: var(--text); }
 .article-featured-body p { font-size: 14px; color: var(--text-secondary); line-height: 1.8; }
 .article-featured-body .meta { font-size: 13px; color: var(--text-secondary); margin-top: 16px; }
@@ -300,12 +290,6 @@ body {
   gap: 20px;
 }
 .articles-grid .glass-card { cursor: pointer; }
-.articles-grid .article-cover {
-  width: 100%; height: 160px; border-radius: 10px;
-  background: linear-gradient(135deg, var(--secondary), var(--primary));
-  margin-bottom: 12px; display: flex; align-items: center; justify-content: center;
-  font-size: 36px;
-}
 
 /* ===== 动态区 社交式 ===== */
 .updates-list { display: flex; flex-direction: column; gap: 20px; }
@@ -405,9 +389,7 @@ body {
   #home { padding: 80px 16px 40px; }
   .home-side-cards { flex-direction: column; max-width: 100%; }
   .player-widget { max-width: 100%; }
-  .article-featured { grid-template-columns: 1fr; }
   .article-featured-body { padding: 20px; }
-  .article-featured-cover { min-height: 180px; }
   .articles-grid { grid-template-columns: 1fr; }
   .explore-grid { grid-template-columns: 1fr; }
 }
@@ -416,7 +398,7 @@ body {
 .article-detail { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3000; display: none; }
 .article-detail.open { display: block; }
 .article-detail-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); }
-.article-detail-card { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 90%; max-width: 720px; max-height: 85vh; background: var(--card-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.2); padding: 40px; overflow-y: auto; }
+.article-detail-card { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 90%; max-width: 1100px; max-height: 92vh; background: var(--card-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.2); padding: 40px; overflow-y: auto; }
 .article-detail-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,0.06); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
 .article-detail-close:hover { background: rgba(0,0,0,0.12); }
 .article-detail-card h1 { font-size: 28px; margin-bottom: 12px; }
@@ -762,9 +744,8 @@ function renderArticles() {
   let html = '';
   // 置顶/首篇
   const featured = articles[0];
-  html += `<div class="article-featured fade-up">
-    <div class="article-featured-cover">📰</div>
-    <div class="article-featured-body" onclick="showArticle('${featured.id}')">
+  html += `<div class="article-featured fade-up" onclick="showArticle('${featured.id}')" style="cursor:pointer;">
+    <div class="article-featured-body">
       <h2>${featured.title || '无标题'}</h2>
       <p>${featured.summary || '暂无摘要'}</p>
       <div class="meta">
@@ -780,7 +761,6 @@ function renderArticles() {
     html += '<div class="articles-grid" style="margin-top:24px;">';
     rest.forEach(a => {
       html += `<div class="glass-card fade-up" onclick="showArticle('${a.id}')" style="cursor:pointer;">
-        <div class="article-cover">📰</div>
         <h3>${a.title || '无标题'}</h3>
         <div class="card-date">${a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN') : ''}</div>
         <div class="card-summary">${(a.summary || '').substring(0, 80)}${(a.summary||'').length > 80 ? '...' : ''}</div>
@@ -946,8 +926,15 @@ function updatePlayerUI() {
   const cover = document.getElementById('playerCover');
   cover.classList.toggle('playing', isPlaying);
   if (musicList[currentSongIndex]) {
-    document.getElementById('songTitle').textContent = musicList[currentSongIndex].title || '未知';
-    document.getElementById('songArtist').textContent = musicList[currentSongIndex].artist || '未知';
+    const song = musicList[currentSongIndex];
+    document.getElementById('songTitle').textContent = song.title || '未知';
+    document.getElementById('songArtist').textContent = song.artist || '未知';
+    // 封面图片
+    if (song.cover) {
+      cover.innerHTML = `<img src="${song.cover}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`;
+    } else {
+      cover.textContent = '🎵';
+    }
   }
 }
 
