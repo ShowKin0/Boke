@@ -888,7 +888,14 @@ function playSong(index) {
 document.getElementById('playBtn').addEventListener('click', () => {
   if (!musicList.length) return;
   if (audio.src) {
-    if (isPlaying) { audio.pause(); isPlaying = false; } else { audio.play().then(() => { isPlaying = true; }); }
+    if (isPlaying) {
+      audio.pause();
+      isPlaying = false;
+    } else {
+      // 乐观更新：先设状态再播放，失败回退
+      isPlaying = true;
+      audio.play().catch(() => { isPlaying = false; updatePlayerUI(); });
+    }
     updatePlayerUI();
   } else if (musicList.length) {
     playSong(0);

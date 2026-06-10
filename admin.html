@@ -253,7 +253,14 @@ tr:hover td { background: rgba(255,176,192,0.04); }
           <div class="form-group"><label>歌曲名</label><input id="musicTitle" placeholder="歌名"></div>
           <div class="form-group"><label>艺术家</label><input id="musicArtist" placeholder="艺术家"></div>
         </div>
-        <div class="form-group"><label>外链歌单 / 音频链接</label><input id="musicUrl" placeholder="https://music.163.com/... 或音频文件链接"></div>
+        <div class="form-group">
+          <label>歌曲文件 / 外链链接</label>
+          <div style="display:flex;gap:6px;">
+            <input id="musicUrl" placeholder="https://... 或选择本地音频文件" style="flex:1;">
+            <button type="button" class="btn-sm edit" onclick="document.getElementById('musicFileInput').click()" style="white-space:nowrap;">📁 选择文件</button>
+          </div>
+          <input type="file" id="musicFileInput" accept="audio/*" style="display:none">
+        </div>
         <div class="form-actions">
           <button class="btn-primary" onclick="music.save()">添加歌曲</button>
           <button class="btn-secondary" onclick="music.cancel()" style="display:none" id="musicCancelBtn">取消</button>
@@ -431,7 +438,7 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
       const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64, name: file.name }),
+        body: JSON.stringify({ file: base64, name: file.name }),
       });
       if (res.ok) {
         const result = await res.json();
@@ -446,6 +453,37 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
     showToast('图片已插入（本地模式）');
   };
   reader.onerror = function() { showToast('图片读取失败', 'error'); };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+// 音乐文件上传 — 上传到 data/uploads/ 并填入 URL 输入框
+document.getElementById('musicFileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 20 * 1024 * 1024) {
+    showToast('音频文件超过 20MB 限制', 'error');
+    this.value = ''; return;
+  }
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    const base64 = ev.target.result;
+    try {
+      const res = await fetch(`${API_BASE}/api/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file: base64, name: file.name }),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        document.getElementById('musicUrl').value = result.url;
+        showToast('音频已上传到 data/uploads/');
+        return;
+      }
+    } catch {}
+    // 降级：base64 直接填入（数据会很大）
+    document.getElementById('musicUrl').value = base64;
+    showToast('音频已转为 base64（服务器未运行）');
+  };
   reader.readAsDataURL(file);
   this.value = '';
 });
@@ -801,7 +839,11 @@ const music = createCRUD({
   render: (items) => {
     const tbody = document.getElementById('musicTableBody');
     if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">暂无歌曲</td></tr>'; return; }
-    tbody.innerHTML = items.map(m => `<tr><td>🎵 ${escapeHtml(m.title||'未知')}</td><td>${escapeHtml(m.artist||'未知')}</td><td>${m.url||m.externalUrl?'🔗 链接':'📁 本地'}</td><td><button class="btn-sm edit" onclick="music.edit('${m.id}')">编辑</button><button class="btn-sm del" onclick="music.delete('${m.id}')">删除</button></td></tr>`).join('');
+    tbody.innerHTML = items.map(m => {
+      const url = m.url || m.externalUrl || '';
+      const typeLabel = url.startsWith('data/uploads/') ? '📁 本地文件' : (url ? '🔗 外链' : '❌ 无');
+      return `<tr><td>🎵 ${escapeHtml(m.title||'未知')}</td><td>${escapeHtml(m.artist||'未知')}</td><td>${typeLabel}</td><td><button class="btn-sm edit" onclick="music.edit('${m.id}')">编辑</button><button class="btn-sm del" onclick="music.delete('${m.id}')">删除</button></td></tr>`;
+    }).join('');
   },
 });
 

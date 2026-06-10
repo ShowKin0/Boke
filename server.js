@@ -150,24 +150,36 @@ const routes = {
     return sendJSON(res, 200, { ok: true, type, message: `${type}.json 已保存` });
   },
 
-  // POST /api/upload — 上传图片
+  // POST /api/upload — 上传文件（图片、音频等）
   async upload(req, res, reqUrl) {
     if (reqUrl !== '/api/upload') return null;
 
     const body = await parseBody(req);
-    if (!body || !body.image) {
-      return sendError(res, 400, '缺少 image 字段');
+    if (!body || !body.file) {
+      return sendError(res, 400, '缺少 file 字段');
     }
 
-    // 解析 base64 data URL: "data:image/png;base64,iVBOR..."
-    const dataUrl = body.image;
-    const matches = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+    // 解析 base64 data URL: "data:image/png;base64,..." 或 "data:audio/mpeg;base64,..."
+    const dataUrl = body.file;
+    const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
     if (!matches) {
-      return sendError(res, 400, '图片格式不正确，需要 data:image/...;base64,... 格式');
+      return sendError(res, 400, '文件格式不正确，需要 data:*/*;base64,... 格式');
     }
 
-    const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+    const mime = matches[1];        // 如 image/png, audio/mpeg
     const base64Data = matches[2];
+
+    // 从 MIME 推断扩展名
+    const mimeExt = {
+      'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif',
+      'image/webp': 'webp', 'image/svg+xml': 'svg',
+      'audio/mpeg': 'mp3', 'audio/mp3': 'mp3',
+      'audio/wav': 'wav', 'audio/x-wav': 'wav',
+      'audio/ogg': 'ogg', 'audio/flac': 'flac',
+      'audio/aac': 'aac', 'audio/mp4': 'm4a',
+      'audio/x-m4a': 'm4a',
+    };
+    const ext = mimeExt[mime] || mime.split('/')[1] || 'bin';
 
     // 生成唯一文件名: 时间戳_随机数.ext
     const ts = Date.now().toString(36);
