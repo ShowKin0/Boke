@@ -491,9 +491,6 @@ body {
   <h2 class="section-title fade-up"><span>🔍</span> 探索</h2>
   <div class="explore-tabs fade-up" id="exploreTabs">
     <button class="explore-tab active" data-category="all">全部</button>
-    <button class="explore-tab" data-category="website">🌐 网站推荐</button>
-    <button class="explore-tab" data-category="source">📦 源码</button>
-    <button class="explore-tab" data-category="video">🎬 学习视频</button>
   </div>
   <div class="explore-grid" id="exploreContainer">
     <div class="loading-spinner" style="grid-column:1/-1;">加载中...</div>
@@ -535,6 +532,7 @@ function applyData(data) {
   renderHomeUpdates();
   renderArticles();
   renderUpdates();
+  renderExploreTabs();
   renderExplores();
   renderPlaylist();
   initFadeUp();
@@ -614,13 +612,15 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// ===== 滚动触发动画 =====
+// ===== 滚动触发动画（单例 observer） =====
+let _fadeObserver = null;
 function initFadeUp() {
-  const els = document.querySelectorAll('.fade-up');
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
-  }, { threshold: 0.1 });
-  els.forEach(el => observer.observe(el));
+  if (!_fadeObserver) {
+    _fadeObserver = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); _fadeObserver.unobserve(e.target); } });
+    }, { threshold: 0.1 });
+  }
+  document.querySelectorAll('.fade-up:not(.visible)').forEach(el => _fadeObserver.observe(el));
 }
 
 // ===== 导航栏（双栏交叉淡入淡出） =====
@@ -664,7 +664,7 @@ function updateActiveSection() {
 
 function updateIndicator(active, navEl, indEl, isTop) {
   const activeItem = navEl.querySelector(`.nav-item[data-section="${active}"]`);
-  if (!activeItem || navEl.classList.contains('hidden') && isTop || navEl.classList.contains('visible') === false && !isTop) {
+  if (!activeItem || (navEl.classList.contains('hidden') && isTop) || (!navEl.classList.contains('visible') && !isTop)) {
     if (indEl) indEl.style.opacity = '0';
     return;
   }
@@ -794,6 +794,23 @@ function renderUpdates() {
 }
 
 // ===== 探索区 =====
+const CATEGORY_LABELS = { website:'🌐 网站推荐', source:'📦 源码', video:'🎬 学习视频' };
+function renderExploreTabs() {
+  const tabs = document.getElementById('exploreTabs');
+  // 保留"全部"按钮，去重动态生成其余标签
+  const allBtn = tabs.querySelector('[data-category="all"]');
+  tabs.innerHTML = '';
+  tabs.appendChild(allBtn);
+  const cats = [...new Set(explores.map(e => e.category).filter(Boolean))];
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'explore-tab';
+    btn.dataset.category = cat;
+    btn.textContent = CATEGORY_LABELS[cat] || cat;
+    if (cat === currentCategory) btn.classList.add('active');
+    tabs.appendChild(btn);
+  });
+}
 function renderExplores(category) {
   const container = document.getElementById('exploreContainer');
   const filtered = category && category !== 'all' ? explores.filter(e => e.category === category) : explores;
@@ -803,7 +820,7 @@ function renderExplores(category) {
   }
   let html = '';
   filtered.forEach(e => {
-    const categoryLabel = e.category === 'website' ? '🌐 网站推荐' : e.category === 'source' ? '📦 源码' : '🎬 学习视频';
+    const categoryLabel = CATEGORY_LABELS[e.category] || e.category || '其他';
     html += `<a class="explore-item fade-up" href="${e.url || '#'}" target="_blank" rel="noopener">
       <span class="icon">${e.icon || '🔗'}</span>
       <h4>${escapeHtml(e.title || '')}</h4>
