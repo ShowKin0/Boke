@@ -1,0 +1,39 @@
+/* ================================================
+   Bōkè — 共享样式
+   富文本内容渲染 + Atom One Dark 代码高亮
+   ================================================ */
+
+/* ===== 富文本内容排版（.prose） ===== */
+.prose { line-height: 1.8; font-size: 16px; }
+.prose h1, .prose h2, .prose h3, .prose h4 { margin-top: 1.5em; margin-bottom: 0.6em; font-weight: 700; color: var(--text); }
+.prose h1 { font-size: 26px; border-bottom: 2px solid var(--primary); padding-bottom: 8px; }
+.prose h2 { font-size: 22px; }
+.prose h3 { font-size: 18px; }
+.prose p { margin-bottom: 1em; line-height: 1.8; }
+.prose strong { color: var(--primary); }
+.prose em { color: var(--secondary); }
+.prose a { color: var(--secondary); text-decoration: underline; text-underline-offset: 2px; }
+.prose a:hover { color: var(--primary); }
+.prose img { max-width: 100%; border-radius: 12px; margin: 1em 0; box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
+.prose blockquote { margin: 1em 0; padding: 12px 20px; border-left: 4px solid var(--primary); background: rgba(255,176,192,0.08); border-radius: 0 8px 8px 0; color: var(--text-secondary); }
+.prose blockquote p:last-child { margin-bottom: 0; }
+.prose ul, .prose ol { padding-left: 1.5em; margin-bottom: 1em; }
+.prose li { margin-bottom: 0.4em; line-height: 1.7; }
+.prose table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 14px; }
+.prose th, .prose td { padding: 10px 14px; border: 1px solid rgba(0,0,0,0.08); text-align: left; }
+.prose th { background: rgba(255,176,192,0.1); font-weight: 600; }
+.prose tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+.prose hr { margin: 1.5em 0; border: none; height: 1px; background: linear-gradient(90deg, transparent, var(--primary), transparent); }
+.prose pre { background: #282c34; color: #abb2bf; padding: 20px; border-radius: 12px; overflow-x: auto; font-size: 14px; line-height: 1.7; margin: 1em 0; position: relative; }
+.prose pre::before { content: attr(data-lang); position: absolute; top: 8px; right: 14px; font-size: 11px; color: #5c6370; text-transform: uppercase; letter-spacing: 1px; }
+.prose pre code { background: none; padding: 0; font-family: Consolas, 'Courier New', monospace; font-size: 14px; }
+.prose code { background: rgba(198,120,221,0.12); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: #c678dd; }
+.prose p > code, .prose li > code { background: rgba(97,175,239,0.12); color: #61afef; }
+
+/* ===== Atom One Dark 代码高亮颜色 ===== */
+.prose .hl-cmt { color: #5c6370; font-style: italic; }
+.prose .hl-str { color: #98c379; }
+.prose .hl-kw  { color: #c678dd; }
+.prose .hl-num { color: #d19a66; }
+.prose .hl-type { color: #e5c07b; }
+.prose .hl-builtin { color: #61afef; }

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bōkè - 个人博客</title>
+<link rel="stylesheet" href="style.css">
 <style>
 :root {
   --bg: #fff5f7;
@@ -421,44 +422,6 @@ body {
 .article-detail-card h1 { font-size: 28px; margin-bottom: 12px; }
 .article-detail-card .meta { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
 .article-detail-card .content { font-size: 16px; line-height: 1.8; }
-.article-detail-card .content img { max-width: 100%; border-radius: 12px; margin: 16px 0; }
-.article-detail-card .content p { margin-bottom: 16px; }
-.article-detail-card .content pre { background: #282c34; color: #abb2bf; padding: 20px; border-radius: 12px; overflow-x: auto; font-size: 14px; line-height: 1.7; margin: 16px 0; position: relative; }
-.article-detail-card .content pre::before { content: attr(data-lang); position: absolute; top: 8px; right: 14px; font-size: 11px; color: #5c6370; text-transform: uppercase; letter-spacing: 1px; }
-.article-detail-card .content pre code { background: none; padding: 0; font-family: Consolas, 'Courier New', monospace; font-size: 14px; }
-
-/* ===== 文章内容渲染（WYSIWYG 输出 + Atom One Dark 代码块） ===== */
-.content h1, .content h2, .content h3, .content h4 { margin-top: 1.5em; margin-bottom: 0.6em; font-weight: 700; color: var(--text); }
-.content h1 { font-size: 26px; border-bottom: 2px solid var(--primary); padding-bottom: 8px; }
-.content h2 { font-size: 22px; }
-.content h3 { font-size: 18px; }
-.content p { margin-bottom: 1em; line-height: 1.8; }
-.content strong { color: var(--primary); }
-.content em { color: var(--secondary); }
-.content a { color: var(--secondary); text-decoration: underline; text-underline-offset: 2px; }
-.content a:hover { color: var(--primary); }
-.content blockquote { margin: 1em 0; padding: 12px 20px; border-left: 4px solid var(--primary); background: rgba(255,176,192,0.08); border-radius: 0 8px 8px 0; color: var(--text-secondary); }
-.content blockquote p:last-child { margin-bottom: 0; }
-.content ul, .content ol { padding-left: 1.5em; margin-bottom: 1em; }
-.content li { margin-bottom: 0.4em; line-height: 1.7; }
-.content table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 14px; }
-.content th, .content td { padding: 10px 14px; border: 1px solid rgba(0,0,0,0.08); text-align: left; }
-.content th { background: rgba(255,176,192,0.1); font-weight: 600; }
-.content tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
-.content hr { margin: 1.5em 0; border: none; height: 1px; background: linear-gradient(90deg, transparent, var(--primary), transparent); }
-.content img { max-width: 100%; border-radius: 12px; margin: 1em 0; box-shadow: var(--shadow); }
-.content pre { background: #282c34; color: #abb2bf; padding: 20px; border-radius: 12px; overflow-x: auto; font-size: 14px; line-height: 1.7; margin: 1em 0; position: relative; }
-.content pre::before { content: attr(data-lang); position: absolute; top: 8px; right: 14px; font-size: 11px; color: #5c6370; text-transform: uppercase; letter-spacing: 1px; }
-.content pre code { background: none; padding: 0; font-family: Consolas, 'Courier New', monospace; font-size: 14px; }
-.content code { background: rgba(198,120,221,0.12); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: #c678dd; }
-.content p > code, .content li > code { background: rgba(97,175,239,0.12); color: #61afef; }
-.content pre .hl-cmt { color: #5c6370; font-style: italic; }
-.content pre .hl-str { color: #98c379; }
-.content pre .hl-kw { color: #c678dd; font-weight: 600; }
-.content pre .hl-num { color: #d19a66; }
-.content pre .hl-type { color: #e5c07b; }
-.content pre .hl-builtin { color: #61afef; }
-.article-detail-card .content .hl-type { color: #e5c07b; }
 </style>
 </head>
 <body>
@@ -596,39 +559,40 @@ function applyData(data) {
 }
 
 async function loadAll() {
-  // 1. 优先从服务器 API 加载（数据直接来自 data/*.json 文件）
-  try {
-    const res = await fetch('/api/data');
-    if (res.ok) {
-      const data = await res.json();
-      // 同步到 localStorage 作为缓存
-      localStorage.setItem('boke_data', JSON.stringify(data));
-      applyData(data);
-      return;
-    }
-  } catch {}
-
-  // 2. 次选 localStorage
-  const local = loadStore();
-  if (local) { applyData(local); return; }
-
-  // 3. 首次访问：尝试从 data/*.json 加载（需要 HTTP 方式打开）
-  try {
-    const files = ['articles', 'updates', 'explores', 'music', 'theme'];
-    const data = {};
-    for (const key of files) {
-      const res = await fetch(`data/${key}.json`);
-      if (res.ok) data[key] = await res.json();
-    }
-    if (data.articles) {
+  // 数据源链：依次尝试，第一个成功的就用
+  const sources = [
+    // 1. 服务器 API（数据来自 data/*.json 文件）
+    async () => {
+      const res = await fetch('/api/data');
+      if (!res.ok) throw new Error('API offline');
+      return res.json();
+    },
+    // 2. localStorage 缓存
+    () => loadStore(),
+    // 3. 首次访问：从 data/*.json 种子文件加载
+    async () => {
+      const files = ['articles', 'updates', 'explores', 'music', 'theme'];
+      const data = {};
+      for (const key of files) {
+        const res = await fetch(`data/${key}.json`);
+        if (res.ok) data[key] = await res.json();
+      }
+      if (!data.articles) throw new Error('No seed data');
       data.theme = data.theme || {};
-      localStorage.setItem('boke_data', JSON.stringify(data));
-      applyData(data);
-      return;
-    }
-  } catch {}
-
-  // 4. 都没数据，渲染空白状态
+      return data;
+    },
+  ];
+  for (const src of sources) {
+    try {
+      const data = await src();
+      if (data) {
+        localStorage.setItem('boke_data', JSON.stringify(data));
+        applyData(data);
+        return;
+      }
+    } catch { /* 尝试下一个源 */ }
+  }
+  // 都没数据，渲染空白状态
   applyData(null);
 }
 
@@ -844,7 +808,7 @@ function renderUpdates() {
         <div class="update-time">${u.createdAt ? new Date(u.createdAt).toLocaleString('zh-CN') : ''}</div>
       </div>
     </div>
-    <div class="update-content">${escapeHtml(u.content || '')}</div>
+    <div class="update-content prose">${u.content || ''}</div>
   </div>`).join('');
   initFadeUp();
 }
@@ -863,7 +827,7 @@ function renderExplores(category) {
     html += `<a class="explore-item fade-up" href="${e.url || '#'}" target="_blank" rel="noopener">
       <span class="icon">${e.icon || '🔗'}</span>
       <h4>${escapeHtml(e.title || '')}</h4>
-      <p>${escapeHtml(e.description || '')}</p>
+      <p>${e.description || ''}</p>
       <span class="explore-category">${categoryLabel}</span>
     </a>`;
   });
@@ -880,7 +844,7 @@ function showArticle(id) {
   document.getElementById('articleDetailContent').innerHTML = `
     <h1>${escapeHtml(a.title || '')}</h1>
     <div class="meta">${date} ${tags}</div>
-    <div class="content">${a.content || ''}</div>
+    <div class="content prose">${a.content || ''}</div>
   `;
   document.getElementById('articleDetail').classList.add('open');
   document.body.style.overflow = 'hidden';

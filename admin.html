@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>后台管理 - Bōkè</title>
+<link rel="stylesheet" href="style.css">
 <style>
 :root {
   --bg: #fff5f7; --primary: #ffb0c0; --secondary: #87ceeb;
@@ -108,6 +109,7 @@ tr:hover td { background: rgba(255,176,192,0.04); }
 .code-modal-footer .btn-primary { background:#c678dd; color:white; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600; transition:background 0.2s; }
 .code-modal-footer .btn-primary:hover { background:#b368d0; }
 @media (max-width: 768px) { .admin-sidebar { width: 60px; padding: 16px 8px; } .admin-sidebar h2 { font-size: 0; } .admin-sidebar h2::after { content: 'B'; font-size: 20px; } .admin-nav-item { font-size: 0; padding: 10px; text-align: center; } .admin-content { margin-left: 60px; padding: 16px; } .form-row { grid-template-columns: 1fr; } .color-picker-grid { grid-template-columns: 1fr 1fr; } .code-modal-inner { width:95%; max-height:90vh; } }
+.rich-text { line-height:1.7; }
 </style>
 </head>
 <body>
@@ -151,26 +153,7 @@ tr:hover td { background: rgba(255,176,192,0.04); }
           <div class="form-group"><label>标签（逗号分隔）</label><input id="articleTags" placeholder="前端, CSS, 设计"></div>
         </div>
         <div class="form-group"><label>内容</label>
-          <div class="editor-toolbar">
-            <button type="button" class="ed-btn" onclick="exeCmd('bold')" title="粗体"><b>B</b></button>
-            <button type="button" class="ed-btn" onclick="exeCmd('italic')" title="斜体"><i>I</i></button>
-            <button type="button" class="ed-btn" onclick="exeCmd('strikeThrough')" title="删除线"><s>S</s></button>
-            <span class="ed-divider"></span>
-            <button type="button" class="ed-btn" onclick="exeCmd('formatBlock','h2')" title="二级标题">H2</button>
-            <button type="button" class="ed-btn" onclick="exeCmd('formatBlock','h3')" title="三级标题">H3</button>
-            <span class="ed-divider"></span>
-            <button type="button" class="ed-btn" onclick="exeCmd('insertUnorderedList')" title="无序列表">•</button>
-            <button type="button" class="ed-btn" onclick="exeCmd('insertOrderedList')" title="有序列表">1.</button>
-            <button type="button" class="ed-btn" onclick="exeCmd('formatBlock','blockquote')" title="引用">💬</button>
-            <span class="ed-divider"></span>
-            <button type="button" class="ed-btn" onclick="insertLink()" title="链接">🔗</button>
-            <button type="button" class="ed-btn" onclick="insertImage()" title="图片">📷</button>
-            <button type="button" class="ed-btn" onclick="exeCmd('insertHorizontalRule')" title="分割线">—</button>
-            <span class="ed-divider"></span>
-            <button type="button" class="ed-btn" onclick="wrapInlineCode()" title="行内代码">&lt;/&gt;</button>
-            <button type="button" class="ed-btn code-btn" onclick="openCodeModal()" title="代码块">▨ 代码块</button>
-          </div>
-          <div id="articleContent" contenteditable="true" class="article-editor" data-placeholder="开始写作..."></div>
+          <div id="articleEditorContainer"></div>
           <input type="file" id="imageFileInput" accept="image/*" style="display:none">
         </div>
         <!-- 代码块编辑器弹窗 -->
@@ -226,7 +209,7 @@ tr:hover td { background: rgba(255,176,192,0.04); }
       <div class="form-wrap" id="updateForm">
         <h4>发布动态</h4>
         <input type="hidden" id="updateEditId">
-        <div class="form-group"><label>内容</label><textarea id="updateContent" placeholder="记录生活..." rows="3"></textarea></div>
+        <div class="form-group"><label>内容</label><div id="updateEditorContainer"></div></div>
         <div class="form-actions">
           <button class="btn-primary" onclick="updates.save()">发布动态</button>
           <button class="btn-secondary" onclick="updates.cancel()" style="display:none" id="updateCancelBtn">取消</button>
@@ -251,7 +234,7 @@ tr:hover td { background: rgba(255,176,192,0.04); }
           <div class="form-group"><label>链接 URL</label><input id="exploreUrl" placeholder="https://..."></div>
           <div class="form-group"><label>图标</label><input id="exploreIcon" placeholder="🔗" value="🔗"></div>
         </div>
-        <div class="form-group"><label>描述</label><textarea id="exploreDescription" rows="2"></textarea></div>
+        <div class="form-group"><label>描述</label><div id="exploreDescContainer"></div></div>
         <div class="form-actions">
           <button class="btn-primary" onclick="explores.save()">添加</button>
           <button class="btn-secondary" onclick="explores.cancel()" style="display:none" id="exploreCancelBtn">取消</button>
@@ -335,28 +318,103 @@ let currentTab = 'articles';
 function showToast(msg, type) { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast '+(type||'success'); t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
 function escapeHtml(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
 function formatDate(d) { return d ? new Date(d).toLocaleDateString('zh-CN') : ''; }
-function exeCmd(cmd, val) {
-  const editor = document.getElementById('articleContent');
+
+// ===== 富文本编辑器通用工厂 =====
+let activeEditor = null;
+
+/** 创建一个富文本编辑器（工具栏 + contenteditable） */
+function createRichEditor(editorId, placeholder) {
+  const wrap = document.createElement('div');
+  wrap.className = 'editor-wrap';
+  wrap.innerHTML = `
+    <div class="editor-toolbar">
+      <button type="button" class="ed-btn" data-cmd="bold" title="粗体"><b>B</b></button>
+      <button type="button" class="ed-btn" data-cmd="italic" title="斜体"><i>I</i></button>
+      <button type="button" class="ed-btn" data-cmd="strikeThrough" title="删除线"><s>S</s></button>
+      <span class="ed-divider"></span>
+      <button type="button" class="ed-btn" data-cmd="h2" title="二级标题">H2</button>
+      <button type="button" class="ed-btn" data-cmd="h3" title="三级标题">H3</button>
+      <span class="ed-divider"></span>
+      <button type="button" class="ed-btn" data-cmd="insertUnorderedList" title="无序列表">•</button>
+      <button type="button" class="ed-btn" data-cmd="insertOrderedList" title="有序列表">1.</button>
+      <button type="button" class="ed-btn" data-cmd="blockquote" title="引用">💬</button>
+      <span class="ed-divider"></span>
+      <button type="button" class="ed-btn" data-cmd="link" title="链接">🔗</button>
+      <button type="button" class="ed-btn" data-cmd="image" title="图片">📷</button>
+      <button type="button" class="ed-btn" data-cmd="hr" title="分割线">—</button>
+      <span class="ed-divider"></span>
+      <button type="button" class="ed-btn" data-cmd="inlineCode" title="行内代码">&lt;/&gt;</button>
+      <button type="button" class="ed-btn code-btn" data-cmd="codeBlock" title="代码块">▨ 代码块</button>
+    </div>
+    <div contenteditable="true" class="article-editor" id="${editorId}" data-placeholder="${placeholder || ''}"></div>
+  `;
+  // 工具栏点击委派
+  wrap.querySelector('.editor-toolbar').addEventListener('click', function(e) {
+    const btn = e.target.closest('.ed-btn');
+    if (!btn) return;
+    e.preventDefault();
+    const cmd = btn.dataset.cmd;
+    const ed = activeEditor || document.getElementById(editorId);
+    ed.focus();
+    switch (cmd) {
+      case 'bold': case 'italic': case 'strikeThrough':
+      case 'insertUnorderedList': case 'insertOrderedList':
+        document.execCommand(cmd, false, null);
+        break;
+      case 'h2': document.execCommand('formatBlock', false, 'h2'); break;
+      case 'h3': document.execCommand('formatBlock', false, 'h3'); break;
+      case 'blockquote': document.execCommand('formatBlock', false, 'blockquote'); break;
+      case 'hr': document.execCommand('insertHorizontalRule', false, null); break;
+      case 'link': {
+        const url = prompt('输入链接 URL:', 'https://');
+        if (url) document.execCommand('createLink', false, url);
+        break;
+      }
+      case 'image': {
+        const input = document.getElementById('imageFileInput');
+        input.value = '';
+        input.click();
+        break;
+      }
+      case 'inlineCode': wrapInlineCode(ed); break;
+      case 'codeBlock': openCodeModal(ed); break;
+    }
+  });
+  // 焦点跟踪
+  const editor = wrap.querySelector('.article-editor');
+  editor.addEventListener('focus', () => { activeEditor = editor; });
+  return wrap;
+}
+
+function wrapInlineCode(editor) {
+  editor = editor || activeEditor || document.getElementById('articleContent');
   editor.focus();
-  if (cmd === 'formatBlock') {
-    // 处理标题/引用 — 用<p>包裹避免整段替换
-    document.execCommand('formatBlock', false, val);
-  } else {
-    document.execCommand(cmd, false, val || null);
+  const sel = window.getSelection();
+  if (!sel.rangeCount || sel.isCollapsed) {
+    const range = sel.getRangeAt(0);
+    const code = document.createElement('code');
+    code.textContent = 'code';
+    range.insertNode(code);
+    range.selectNodeContents(code);
+    sel.removeAllRanges(); sel.addRange(range);
+    return;
   }
+  document.execCommand('insertHTML', false, '<code>' + sel.toString() + '</code>');
 }
-function insertLink() {
-  const editor = document.getElementById('articleContent'); editor.focus();
-  const url = prompt('输入链接 URL:', 'https://');
-  if (url) document.execCommand('createLink', false, url);
+// ===== 代码块弹窗 =====
+function openCodeModal(editor) {
+  activeEditor = editor || activeEditor || document.getElementById('articleContent');
+  document.getElementById('codeModal').style.display = 'block';
+  document.getElementById('codeInput').value = '';
+  document.getElementById('codeOverlayContent').innerHTML = '';
+  document.getElementById('codeGutter').textContent = '1';
+  document.getElementById('codeLangSelect').value = '';
+  document.getElementById('codeInput').focus();
 }
-function insertImage() {
-  const editor = document.getElementById('articleContent'); editor.focus();
-  const input = document.getElementById('imageFileInput');
-  input.value = ''; // 重置以便重复选同一文件
-  input.click();
+function closeCodeModal() {
+  document.getElementById('codeModal').style.display = 'none';
 }
-// 图片文件选择回调 — 上传到服务器 data/uploads/
+// 图片上传 — 通用（使用 activeEditor）
 document.getElementById('imageFileInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -367,10 +425,8 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
   const reader = new FileReader();
   reader.onload = async function(ev) {
     const base64 = ev.target.result;
-    const editor = document.getElementById('articleContent');
+    const editor = activeEditor || document.getElementById('articleContent');
     editor.focus();
-
-    // 尝试上传到服务器
     try {
       const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
@@ -385,43 +441,14 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
         return;
       }
     } catch {}
-
-    // 降级：服务器未运行，用 base64
     const img = `<img src="${base64}" alt="${file.name}" style="max-width:100%;border-radius:8px;margin:0.5em 0;">`;
     document.execCommand('insertHTML', false, img);
-    showToast('图片已插入（本地模式，未保存到服务器）');
+    showToast('图片已插入（本地模式）');
   };
   reader.onerror = function() { showToast('图片读取失败', 'error'); };
   reader.readAsDataURL(file);
   this.value = '';
 });
-function wrapInlineCode() {
-  const editor = document.getElementById('articleContent'); editor.focus();
-  const sel = window.getSelection();
-  if (!sel.rangeCount || sel.isCollapsed) {
-    // 没选中文字：插入占位代码并选中
-    const range = sel.getRangeAt(0);
-    const code = document.createElement('code');
-    code.textContent = 'code';
-    range.insertNode(code);
-    range.selectNodeContents(code);
-    sel.removeAllRanges(); sel.addRange(range);
-    return;
-  }
-  document.execCommand('insertHTML', false, '<code>' + sel.toString() + '</code>');
-}
-// ===== 代码块弹窗 =====
-function openCodeModal() {
-  document.getElementById('codeModal').style.display = 'block';
-  document.getElementById('codeInput').value = '';
-  document.getElementById('codeOverlayContent').innerHTML = '';
-  document.getElementById('codeGutter').textContent = '1';
-  document.getElementById('codeLangSelect').value = '';
-  document.getElementById('codeInput').focus();
-}
-function closeCodeModal() {
-  document.getElementById('codeModal').style.display = 'none';
-}
 // 代码语法高亮渲染
 function highlightCodeText(code, lang) {
   if (!code) return '';
@@ -495,7 +522,7 @@ function insertCodeBlock() {
   const code = document.getElementById('codeInput').value;
   if (!code.trim()) { showToast('请输入代码', 'error'); return; }
   const lang = document.getElementById('codeLangSelect').value;
-  const editor = document.getElementById('articleContent');
+  const editor = activeEditor || document.getElementById('articleContent');
   editor.focus();
   // 用 pre 标签包装代码块
   const highlighted = highlightCodeText(code, lang);
@@ -505,7 +532,7 @@ function insertCodeBlock() {
   closeCodeModal();
   showToast('代码块已插入');
 }
-// 代码输入同步滚动
+// 代码输入同步滚动 + 编辑器初始化
 document.addEventListener('DOMContentLoaded', () => {
   const codeInput = document.getElementById('codeInput');
   if (codeInput) {
@@ -516,6 +543,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const langSelect = document.getElementById('codeLangSelect');
   if (langSelect) langSelect.addEventListener('change', updateCodePreview);
+
+  // ===== 初始化所有富文本编辑器 =====
+  // 文章编辑器
+  const articleContainer = document.getElementById('articleEditorContainer');
+  if (articleContainer) {
+    articleContainer.appendChild(createRichEditor('articleContent', '开始写作...'));
+  }
+  // 动态编辑器
+  const updateContainer = document.getElementById('updateEditorContainer');
+  if (updateContainer) {
+    updateContainer.appendChild(createRichEditor('updateContent', '记录生活...'));
+  }
+  // 探索描述编辑器（精简版 — 只保留基础格式化）
+  const descContainer = document.getElementById('exploreDescContainer');
+  if (descContainer) {
+    // 用基础版编辑器
+    const ed = createRichEditor('exploreDescription', '描述...');
+    // 移除一些高级功能按钮（代码块、标题等对简短描述不必要）
+    const toolbar = ed.querySelector('.editor-toolbar');
+    // 保留 B/I/链接/图片，移除标题/列表/代码块
+    const keep = ['bold', 'italic', 'strikeThrough', 'link', 'image', 'inlineCode', 'hr'];
+    toolbar.querySelectorAll('.ed-btn').forEach(btn => {
+      if (!keep.includes(btn.dataset.cmd)) btn.remove();
+    });
+    descContainer.appendChild(ed);
+  }
 });
 // ===== 数据导出/导入 =====
 function exportData() {
@@ -685,8 +738,8 @@ const updates = createCRUD({
   editId: 'updateEditId', formTitleId: null, submitBtnId: null, cancelBtnId: 'updateCancelBtn',
   addTitle: '发布动态', addBtn: '发布动态', addedMsg: '已发布',
   editTitle: '编辑动态', editBtn: '保存修改',
-  fields: [{ id: 'updateContent', prop: 'content' }],
-  buildData: () => ({ content: document.getElementById('updateContent').value.trim() }),
+  fields: [{ id: 'updateContent', prop: 'content', set: (el, v) => { el.innerHTML = v; } }],
+  buildData: () => ({ content: document.getElementById('updateContent').innerHTML.trim() }),
   onEdit: () => { document.getElementById('updateForm').querySelector('h4').textContent = '编辑动态'; },
   onCancel: () => { document.getElementById('updateForm').querySelector('h4').textContent = '发布动态'; },
   render: (items) => {
@@ -694,7 +747,7 @@ const updates = createCRUD({
     if (!items.length) { container.innerHTML = '<div class="table-empty">暂无动态</div>'; return; }
     container.innerHTML = items.map(u => `<div style="background:var(--card-bg);backdrop-filter:blur(20px);border-radius:12px;border:1px solid rgba(255,255,255,0.3);padding:16px;margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div style="flex:1;"><p>${escapeHtml(u.content||'(无内容)')}</p>
+        <div style="flex:1;"><div class="rich-text prose">${u.content||'(无内容)'}</div>
           <div style="font-size:13px;color:var(--text2);margin-top:6px;">${formatDate(u.createdAt)}</div></div>
         <div><button class="btn-sm edit" onclick="updates.edit('${u.id}')">编辑</button><button class="btn-sm del" onclick="updates.delete('${u.id}')">删除</button></div>
       </div></div>`).join('');
@@ -712,14 +765,14 @@ const explores = createCRUD({
     { id: 'exploreCategory', prop: 'category' },
     { id: 'exploreUrl', prop: 'url' },
     { id: 'exploreIcon', prop: 'icon' },
-    { id: 'exploreDescription', prop: 'description' },
+    { id: 'exploreDescription', prop: 'description', set: (el, v) => { el.innerHTML = v; } },
   ],
   buildData: () => ({
     title: document.getElementById('exploreTitle').value.trim(),
     category: document.getElementById('exploreCategory').value,
     url: document.getElementById('exploreUrl').value.trim(),
     icon: document.getElementById('exploreIcon').value.trim()||'🔗',
-    description: document.getElementById('exploreDescription').value.trim(),
+    description: document.getElementById('exploreDescription').innerHTML.trim(),
   }),
   onCancel: () => { document.getElementById('exploreCategory').value = 'website'; },
   render: (items) => {

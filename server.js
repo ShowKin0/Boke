@@ -66,9 +66,11 @@ function readJSON(filePath) {
   } catch { return null; }
 }
 
-/** 写入 JSON 文件 */
+/** 写入 JSON 文件（原子写入：先写 .tmp 再 rename） */
 function writeJSON(filePath, data) {
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  const tmp = filePath + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8');
+  fs.renameSync(tmp, filePath);
 }
 
 /** 发送 JSON 响应 */
