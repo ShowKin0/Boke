@@ -451,13 +451,13 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
       });
       if (res.ok) {
         const result = await res.json();
-        const img = `<img src="${result.url}" alt="${file.name}" style="max-width:100%;max-height:400px;width:auto;height:auto;border-radius:8px;margin:0.5em 0;object-fit:contain;">`;
+        const img = `<img src="${result.url}" alt="${file.name}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
         document.execCommand('insertHTML', false, img);
         showToast('图片已上传到 data/uploads/');
         return;
       }
     } catch {}
-    const img = `<img src="${base64}" alt="${file.name}" style="max-width:100%;max-height:400px;width:auto;height:auto;border-radius:8px;margin:0.5em 0;object-fit:contain;">`;
+    const img = `<img src="${base64}" alt="${file.name}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
     document.execCommand('insertHTML', false, img);
     showToast('图片已插入（本地模式）');
   };
