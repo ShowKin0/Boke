@@ -13,19 +13,34 @@
 
 ```
 Boke/
-├── index.html      # 博客前端主页 — 展示所有内容
-├── admin.html      # 后台管理页 — 内容 CRUD + 主题自定义
-├── server.js       # Node.js 服务器 — 静态文件 + REST API + 图片上传
-├── data/           # 数据文件（磁盘持久化，git 跟踪）
-│   ├── articles.json   # 文章
-│   ├── updates.json    # 动态
-│   ├── explores.json   # 探索链接
-│   ├── music.json      # 音乐列表
-│   ├── theme.json      # 主题配色
-│   └── uploads/        # 上传的图片文件
-│       ├── <timestamp>_<random>.jpg
-│       └── ...
-└── package.json    # 项目配置
+├── index.html              # 前台页面骨架
+├── admin.html              # 后台页面骨架
+├── style.css               # 前后台共享富文本样式
+├── public/
+│   ├── css/
+│   │   ├── index.css       # 前台页面样式
+│   │   └── admin.css       # 后台页面样式
+│   └── js/
+│       ├── shared.js       # 前后台共享工具：本地存储、日期、转义、同步
+│       ├── index.js        # 前台页面逻辑
+│       └── admin.js        # 后台管理逻辑
+├── server.js               # 服务端启动入口
+├── src/server/
+│   ├── app.js              # HTTP 服务创建和总分发
+│   ├── api-routes.js       # /api/data 与 /api/upload 路由
+│   ├── data-store.js       # data/*.json 初始化、读写和白名单
+│   ├── upload-store.js     # base64 上传落盘
+│   ├── static-files.js     # 静态文件服务
+│   ├── http-utils.js       # JSON body、JSON 响应、错误响应
+│   └── config.js           # 路径、端口、默认数据
+├── data/                   # 数据文件（磁盘持久化，git 跟踪）
+│   ├── articles.json
+│   ├── updates.json
+│   ├── explores.json
+│   ├── music.json
+│   ├── theme.json
+│   └── uploads/
+└── package.json
 ```
 
 ## 数据流
@@ -53,24 +68,31 @@ node server.js
 ```
 然后打开 `http://localhost:3000` 浏览，`http://localhost:3000/admin.html` 管理。
 
-### 服务端（server.js）
+### 服务端（server.js / src/server）
 - `GET  /api/data` → 读取所有 data/*.json，合并返回
 - `POST /api/data/:type` → 写入某一类型的 JSON 文件
 - `POST /api/upload` → 接收 base64 图片，存到 data/uploads/，返回 URL
 - `GET  /*` → 静态文件服务（HTML/CSS/JS/图片）
+- 新增数据类型时，先在 `src/server/config.js` 的 `DATA_TYPES` 和 `DEFAULT_DATA` 中登记，再补前后台渲染/管理逻辑
 
-### 前端（index.html）
+### 前端（index.html + public/js/index.js）
 - `loadAll()` → 优先从 `/api/data` 加载 → localStorage 降级 → data/*.json 降级
 - `applyTheme(theme)` → 应用主题 CSS 变量
 - `showArticle(id)` → 打开文章详情弹窗
 - 四个区域：首页（时钟+播放器）→ 文章 → 动态 → 探索（单页滚动）
 
-### 后台（admin.html）
+### 后台（admin.html + public/js/admin.js）
 - **登录密码**: `zhang`（硬编码，纯前端项目请自行修改）
 - `createCRUD(cfg)` → CRUD 工厂函数，统一管理所有数据类型的增删改查
 - 每次保存自动调用 `syncToServer(type, data)` 写入磁盘文件
 - 图片上传 → 服务器存到 `data/uploads/` → 文章引用路径
 - 编辑器支持：WYSIWYG 富文本（contenteditable）、代码块弹窗（Atom One Dark 风格语法高亮）、图片文件选择上传
+
+### 共享前端工具（public/js/shared.js）
+- `loadStore()` / `saveStore()` → localStorage 读写
+- `syncToServer(type, data)` → 写入 `/api/data/:type`
+- `escapeHtml()` / `formatDate()` → 页面渲染通用工具
+- `getDefaultStore()` → 前后台一致的空数据结构
 
 ## 数据格式
 
