@@ -96,7 +96,11 @@
           <button class="btn-secondary" onclick="articles.cancel()" style="display:none" id="articleCancelBtn">取消</button>
         </div>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>标题</th><th>标签</th><th>日期</th><th>操作</th></tr></thead><tbody id="articlesTableBody"></tbody></table></div>
+      <div class="table-wrap" id="articlesTableWrap"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);">
+  <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('articles')"> 全选</label>
+  <button class="btn-sm del" onclick="batchDelete('articles')">🗑 批量删除</button>
+</div>
+<table><thead><tr><th style="width:32px;"></th><th>标题</th><th>标签</th><th>日期</th><th>操作</th><th>置顶</th></tr></thead><tbody id="articlesTableBody"></tbody></table></div>
     </div>
 
     <!-- 动态管理 -->
@@ -110,6 +114,10 @@
           <button class="btn-primary" onclick="updates.save()">发布动态</button>
           <button class="btn-secondary" onclick="updates.cancel()" style="display:none" id="updateCancelBtn">取消</button>
         </div>
+      </div>
+      <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+        <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('updates')"> 全选</label>
+        <button class="btn-sm del" onclick="batchDelete('updates')">🗑 批量删除</button>
       </div>
       <div id="updatesList"></div>
     </div>
@@ -136,7 +144,11 @@
           <button class="btn-secondary" onclick="explores.cancel()" style="display:none" id="exploreCancelBtn">取消</button>
         </div>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>标题</th><th>分类</th><th>操作</th></tr></thead><tbody id="exploresTableBody"></tbody></table></div>
+      <div class="table-wrap"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);">
+  <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('explores')"> 全选</label>
+  <button class="btn-sm del" onclick="batchDelete('explores')">🗑 批量删除</button>
+</div>
+<table><thead><tr><th style="width:32px;"></th><th>标题</th><th>分类</th><th>操作</th></tr></thead><tbody id="exploresTableBody"></tbody></table></div>
     </div>
 
     <!-- 音乐管理 -->
@@ -171,7 +183,11 @@
           <button class="btn-secondary" onclick="music.cancel()" style="display:none" id="musicCancelBtn">取消</button>
         </div>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>歌曲</th><th>歌手</th><th>类型</th><th>操作</th></tr></thead><tbody id="musicTableBody"></tbody></table></div>
+      <div class="table-wrap"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);">
+  <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('music')"> 全选</label>
+  <button class="btn-sm del" onclick="batchDelete('music')">🗑 批量删除</button>
+</div>
+<table><thead><tr><th style="width:32px;"></th><th>歌曲</th><th>歌手</th><th>类型</th><th>操作</th></tr></thead><tbody id="musicTableBody"></tbody></table></div>
     </div>
 
     <!-- 主题管理 -->

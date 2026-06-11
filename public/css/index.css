@@ -356,6 +356,41 @@ body {
 .fade-up.visible { opacity: 1; transform: translateY(0); }
 
 
+/* ===== 分页 ===== */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+.page-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--card-bg);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.page-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+}
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.page-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
 /* ===== 加载/空状态 ===== */
 .loading-spinner {
   display: flex; align-items: center; justify-content: center; gap: 8px;

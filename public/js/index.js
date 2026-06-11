@@ -13,6 +13,10 @@ let articles = [], updates = [], explores = [], musicList = [], theme = {};
 let currentCategory = 'all';
 let currentSongIndex = 0;
 let isPlaying = false;
+let articlesPage = 1;
+let updatesPage = 1;
+const ARTICLE_PAGE_SIZE = 9;
+const UPDATE_PAGE_SIZE = 4;
 const audio = new Audio();
 
 
@@ -23,6 +27,8 @@ function applyData(data) {
   updates = data.updates || [];
   explores = data.explores || [];
   musicList = data.music || [];
+  articlesPage = 1;
+  updatesPage = 1;
   if (data.theme) { theme = data.theme; applyTheme(theme); }
   renderHomeArticles();
   renderHomeUpdates();
@@ -238,8 +244,8 @@ function renderArticles() {
     return;
   }
   let html = '';
-  // 置顶/首篇
-  const featured = articles[0];
+  // 置顶文章（如果有）
+  const featured = articles.find(a => a.pinned) || articles[0];
   html += `<div class="article-featured fade-up" onclick="showArticle('${featured.id}')" style="cursor:pointer;">
     <div class="article-featured-body">
       <h2>${featured.title || '无标题'}</h2>
@@ -251,11 +257,16 @@ function renderArticles() {
     </div>
   </div>`;
 
-  // 其余文章
-  const rest = articles.slice(1);
+  // 其余文章（分页，排除置顶那篇）
+  const rest = articles.filter(a => a.id !== featured.id);
   if (rest.length) {
+    const totalPages = Math.ceil(rest.length / ARTICLE_PAGE_SIZE);
+    if (articlesPage > totalPages) articlesPage = totalPages;
+    const start = (articlesPage - 1) * ARTICLE_PAGE_SIZE;
+    const pageItems = rest.slice(start, start + ARTICLE_PAGE_SIZE);
+
     html += '<div class="articles-grid" style="margin-top:24px;">';
-    rest.forEach(a => {
+    pageItems.forEach(a => {
       html += `<div class="glass-card fade-up" onclick="showArticle('${a.id}')" style="cursor:pointer;">
         <h3>${a.title || '无标题'}</h3>
         <div class="card-date">${a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN') : ''}</div>
@@ -264,9 +275,24 @@ function renderArticles() {
       </div>`;
     });
     html += '</div>';
+
+    // 分页按钮
+    if (totalPages > 1) {
+      html += '<div class="pagination">';
+      html += `<button class="page-btn" onclick="changeArticlesPage(${articlesPage - 1})" ${articlesPage <= 1 ? 'disabled' : ''}>← 上一页</button>`;
+      html += `<span class="page-info">${articlesPage} / ${totalPages}</span>`;
+      html += `<button class="page-btn" onclick="changeArticlesPage(${articlesPage + 1})" ${articlesPage >= totalPages ? 'disabled' : ''}>下一页 →</button>`;
+      html += '</div>';
+    }
   }
   container.innerHTML = html;
   initFadeUp();
+}
+
+function changeArticlesPage(page) {
+  articlesPage = page;
+  renderArticles();
+  document.getElementById('articles').scrollIntoView({ behavior: 'smooth' });
 }
 
 // ===== 动态区 =====
@@ -276,7 +302,12 @@ function renderUpdates() {
     container.innerHTML = `<div class="empty-state"><div class="icon">💬</div><p>暂无动态</p></div>`;
     return;
   }
-  container.innerHTML = updates.map(u => `<div class="update-card fade-up">
+  const totalPages = Math.ceil(updates.length / UPDATE_PAGE_SIZE);
+  if (updatesPage > totalPages) updatesPage = totalPages;
+  const start = (updatesPage - 1) * UPDATE_PAGE_SIZE;
+  const pageItems = updates.slice(start, start + UPDATE_PAGE_SIZE);
+
+  let html = pageItems.map(u => `<div class="update-card fade-up">
     <div class="update-header">
       <div class="update-avatar">👤</div>
       <div>
@@ -286,7 +317,24 @@ function renderUpdates() {
     </div>
     <div class="update-content prose">${u.content || ''}</div>
   </div>`).join('');
+
+  // 分页按钮
+  if (totalPages > 1) {
+    html += '<div class="pagination">';
+    html += `<button class="page-btn" onclick="changeUpdatesPage(${updatesPage - 1})" ${updatesPage <= 1 ? 'disabled' : ''}>← 上一页</button>`;
+    html += `<span class="page-info">${updatesPage} / ${totalPages}</span>`;
+    html += `<button class="page-btn" onclick="changeUpdatesPage(${updatesPage + 1})" ${updatesPage >= totalPages ? 'disabled' : ''}>下一页 →</button>`;
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
   initFadeUp();
+}
+
+function changeUpdatesPage(page) {
+  updatesPage = page;
+  renderUpdates();
+  document.getElementById('updates').scrollIntoView({ behavior: 'smooth' });
 }
 
 // ===== 探索区 =====

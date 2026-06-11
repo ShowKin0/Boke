@@ -25,6 +25,42 @@ let currentTab = 'articles';
 
 function showToast(msg, type) { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast '+(type||'success'); t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
 
+// ===== 批量删除 =====
+const selectedIds = { articles: new Set(), updates: new Set(), explores: new Set(), music: new Set() };
+
+function toggleSelectAll(key) {
+  const checkboxes = document.querySelectorAll(`.batch-checkbox[data-key="${key}"]`);
+  if (!checkboxes.length) return;
+  const allChecked = [...checkboxes].every(cb => cb.checked);
+  const checked = !allChecked;
+  checkboxes.forEach(cb => { cb.checked = checked; toggleSelect(cb); });
+}
+
+function toggleSelect(cb) {
+  const key = cb.dataset.key;
+  const id = cb.dataset.id;
+  if (cb.checked) selectedIds[key].add(id);
+  else selectedIds[key].delete(id);
+}
+
+function batchDelete(key) {
+  const ids = [...selectedIds[key]];
+  if (!ids.length) { showToast('请先勾选要删除的项目', 'error'); return; }
+  if (!confirm(`确定删除选中的 ${ids.length} 项？`)) return;
+  let items = store[key] || [];
+  items = items.filter(i => !ids.includes(i.id));
+  store[key] = items;
+  saveStore(store);
+  syncToServer(key, items);
+  selectedIds[key].clear();
+  showToast(`已删除 ${ids.length} 项`);
+  // 重新加载对应面板
+  if (key === 'articles') articles.load();
+  else if (key === 'updates') updates.load();
+  else if (key === 'explores') explores.load();
+  else if (key === 'music') music.load();
+}
+
 // ===== 富文本编辑器通用工厂 =====
 let activeEditor = null;
 
@@ -563,15 +599,34 @@ const articles = createCRUD({
   }),
   render: (items) => {
     const tbody = document.getElementById('articlesTableBody');
-    if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">暂无文章</td></tr>'; return; }
-    tbody.innerHTML = items.map(a => `<tr>
-      <td><strong>${escapeHtml(a.title||'')}</strong></td>
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="6" class="table-empty">暂无文章</td></tr>'; return; }
+    // 置顶文章排前面
+    const sorted = [...items].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+    tbody.innerHTML = sorted.map(a => `<tr>
+      <td><input type="checkbox" class="batch-checkbox" data-key="articles" data-id="${a.id}" onchange="toggleSelect(this)"></td>
+      <td><strong>${escapeHtml(a.title||'')}</strong>${a.pinned ? ' <span style="color:var(--primary);font-size:12px;">📌 置顶</span>' : ''}</td>
       <td>${(a.tags||[]).map(t => `<span style="display:inline-block;padding:1px 8px;background:rgba(135,206,235,0.15);border-radius:4px;font-size:12px;margin:1px;">${t}</span>`).join('')}</td>
       <td>${formatDate(a.createdAt)}</td>
       <td><button class="btn-sm edit" onclick="articles.edit('${a.id}')">编辑</button><button class="btn-sm del" onclick="articles.remove('${a.id}')">删除</button></td>
+      <td><button class="btn-sm ${a.pinned ? 'del' : 'edit'}" onclick="togglePin('${a.id}')">${a.pinned ? '取消置顶' : '📌 置顶'}</button></td>
     </tr>`).join('');
   },
 });
+
+// ===== 置顶文章 =====
+function togglePin(id) {
+  const items = store.articles || [];
+  const idx = items.findIndex(i => i.id === id);
+  if (idx === -1) return;
+  // 如果已有其他置顶，先全部取消
+  items.forEach(i => i.pinned = false);
+  items[idx].pinned = !items[idx].pinned;
+  store.articles = items;
+  saveStore(store);
+  syncToServer('articles', items);
+  showToast(items[idx].pinned ? '已置顶' : '已取消置顶');
+  articles.load();
+}
 
 // ===== 动态 CRUD =====
 const updates = createCRUD({
@@ -588,8 +643,10 @@ const updates = createCRUD({
     if (!items.length) { container.innerHTML = '<div class="table-empty">暂无动态</div>'; return; }
     container.innerHTML = items.map(u => `<div style="background:var(--card-bg);backdrop-filter:blur(20px);border-radius:12px;border:1px solid rgba(255,255,255,0.3);padding:16px;margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div style="flex:1;"><div class="rich-text prose">${u.content||'(无内容)'}</div>
-          <div style="font-size:13px;color:var(--text2);margin-top:6px;">${formatDate(u.createdAt)}</div></div>
+        <div style="flex:1;display:flex;align-items:flex-start;gap:8px;">
+          <input type="checkbox" class="batch-checkbox" data-key="updates" data-id="${u.id}" onchange="toggleSelect(this)" style="margin-top:4px;">
+          <div><div class="rich-text prose">${u.content||'(无内容)'}</div>
+            <div style="font-size:13px;color:var(--text2);margin-top:6px;">${formatDate(u.createdAt)}</div></div></div>
         <div><button class="btn-sm edit" onclick="updates.edit('${u.id}')">编辑</button><button class="btn-sm del" onclick="updates.remove('${u.id}')">删除</button></div>
       </div></div>`).join('');
   },
@@ -619,8 +676,8 @@ const explores = createCRUD({
   render: (items) => {
     const tbody = document.getElementById('exploresTableBody');
     const labels = { website: '🌐 网站', source: '📦 源码', video: '🎬 视频' };
-    if (!items.length) { tbody.innerHTML = '<tr><td colspan="3" class="table-empty">暂无项目</td></tr>'; return; }
-    tbody.innerHTML = items.map(e => `<tr><td>${escapeHtml(e.icon||'🔗')} ${escapeHtml(e.title||'')}</td><td>${labels[e.category]||e.category}</td><td><button class="btn-sm edit" onclick="explores.edit('${e.id}')">编辑</button><button class="btn-sm del" onclick="explores.remove('${e.id}')">删除</button></td></tr>`).join('');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">暂无项目</td></tr>'; return; }
+    tbody.innerHTML = items.map(e => `<tr><td><input type="checkbox" class="batch-checkbox" data-key="explores" data-id="${e.id}" onchange="toggleSelect(this)"></td><td>${escapeHtml(e.icon||'🔗')} ${escapeHtml(e.title||'')}</td><td>${labels[e.category]||e.category}</td><td><button class="btn-sm edit" onclick="explores.edit('${e.id}')">编辑</button><button class="btn-sm del" onclick="explores.remove('${e.id}')">删除</button></td></tr>`).join('');
   },
 });
 
@@ -644,11 +701,11 @@ const music = createCRUD({
   onCancel: () => { document.getElementById('musicCoverPreview').style.display = 'none'; },
   render: (items) => {
     const tbody = document.getElementById('musicTableBody');
-    if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">暂无歌曲</td></tr>'; return; }
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="5" class="table-empty">暂无歌曲</td></tr>'; return; }
     tbody.innerHTML = items.map(m => {
       const url = m.url || m.externalUrl || '';
       const typeLabel = url.startsWith('data/uploads/') ? '📁 本地文件' : (url ? '🔗 外链' : '❌ 无');
-      return `<tr><td>🎵 ${escapeHtml(m.title||'未知')}</td><td>${escapeHtml(m.artist||'未知')}</td><td>${typeLabel}</td><td><button class="btn-sm edit" onclick="music.edit('${m.id}')">编辑</button><button class="btn-sm del" onclick="music.remove('${m.id}')">删除</button></td></tr>`;
+      return `<tr><td><input type="checkbox" class="batch-checkbox" data-key="music" data-id="${m.id}" onchange="toggleSelect(this)"></td><td>🎵 ${escapeHtml(m.title||'未知')}</td><td>${escapeHtml(m.artist||'未知')}</td><td>${typeLabel}</td><td><button class="btn-sm edit" onclick="music.edit('${m.id}')">编辑</button><button class="btn-sm del" onclick="music.remove('${m.id}')">删除</button></td></tr>`;
     }).join('');
   },
 });
