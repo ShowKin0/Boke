@@ -1,5 +1,14 @@
 // ===== 状态管理 =====
 const { loadStore, saveStore, escapeHtml } = window.Boke;
+
+// 检查 ?clear 参数，清除 localStorage 缓存
+if (window.location.search.includes('clear')) {
+  localStorage.removeItem('boke_data');
+  // 移除 URL 参数，防止刷新后再次触发
+  const url = new URL(window.location);
+  url.searchParams.delete('clear');
+  window.history.replaceState({}, '', url);
+}
 let articles = [], updates = [], explores = [], musicList = [], theme = {};
 let currentCategory = 'all';
 let currentSongIndex = 0;

@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 // ===== 数据导出/导入 =====
 function exportData() {
-  const store = loadStore();
+  const store = loadStoreOrDefault();
   // 拆成每个数据类型的文件，逐一导出
   const entries = [
     { name: 'articles.json', data: store.articles || [] },
@@ -680,7 +680,7 @@ function resetTheme() { store.theme = {...DEFAULT_THEME}; saveStore(store); sync
 
 function loadAll() {
   try {
-    store = loadStore();
+    store = loadStoreOrDefault();
     articles.load(); updates.load(); explores.load(); music.load(); loadTheme();
     switchTab('articles');
   } catch(e) { showToast('加载出错: '+e.message, 'error'); }
