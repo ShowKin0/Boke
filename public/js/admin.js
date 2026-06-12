@@ -7,7 +7,10 @@ const {
   now,
   syncToServer: syncDataToServer,
   escapeHtml,
+  escapeHtmlCached,
+  truncate,
   formatDate,
+  memoize,
 } = window.Boke;
 
 // ===== 服务器同步 =====
@@ -316,8 +319,20 @@ function showCoverPreview(url) {
   img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
   preview.appendChild(img);
 }
-// 代码语法高亮渲染
+// 代码语法高亮渲染（带缓存：相同 (code, lang) 直接返回上次结果）
+const _hlCache = new Map();
+const _HL_CACHE_MAX = 32;
 function highlightCodeText(code, lang) {
+  const key = lang + '\0' + code;
+  const hit = _hlCache.get(key);
+  if (hit !== undefined) return hit;
+  const result = _highlightRaw(code, lang);
+  if (_hlCache.size >= _HL_CACHE_MAX) _hlCache.delete(_hlCache.keys().next().value);
+  _hlCache.set(key, result);
+  return result;
+}
+
+function _highlightRaw(code, lang) {
   if (!code) return '';
   let html = escapeHtml(code);
   const kwSets = {

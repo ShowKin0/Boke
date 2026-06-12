@@ -18,6 +18,7 @@ let updatesPage = 1;
 const ARTICLE_PAGE_SIZE = 9;
 const UPDATE_PAGE_SIZE = 4;
 const audio = new Audio();
+const { truncate, formatDateCached } = window.Boke;
 
 
 // ===== 从 localStorage / data 文件加载数据 =====
@@ -89,27 +90,24 @@ function applyTheme(t) {
   if (t.textSecondary) r.setProperty('--text-secondary', t.textSecondary);
 }
 
-// ===== 时钟 =====
+// ===== 时钟（DOM 引用缓存，每秒高频调用） =====
+const $clockTime = document.getElementById('clockTime');
+const $clockDate = document.getElementById('clockDate');
+const $clockFrame = document.getElementById('clockFrame');
+const DAY_NAMES = ['日','一','二','三','四','五','六'];
+
 function updateClock() {
   const now = new Date();
-  const h = String(now.getHours()).padStart(2,'0');
-  const m = String(now.getMinutes()).padStart(2,'0');
-  const s = String(now.getSeconds()).padStart(2,'0');
-  document.getElementById('clockTime').textContent = `${h}:${m}:${s}`;
-  const days = ['日','一','二','三','四','五','六'];
-  document.getElementById('clockDate').textContent =
-    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 星期${days[now.getDay()]}`;
+  $clockTime.textContent =
+    `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  $clockDate.textContent =
+    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 星期${DAY_NAMES[now.getDay()]}`;
 
   // 时钟阴影随太阳位置变化
   const hour = now.getHours() + now.getMinutes() / 60;
-  const angle = (hour / 24) * 360;
-  const rad = (angle * Math.PI) / 180;
-  const shadowX = Math.sin(rad) * 24;
-  const shadowY = Math.cos(rad) * 24;
-  const blur = 24 + Math.sin(rad) * 12;
-  const opacity = 0.04 + Math.abs(Math.sin(rad)) * 0.06;
-  document.getElementById('clockFrame').style.boxShadow =
-    `${shadowX.toFixed(1)}px ${shadowY.toFixed(1)}px ${blur.toFixed(1)}px rgba(0,0,0,${opacity.toFixed(3)})`;
+  const rad = ((hour / 24) * 360 * Math.PI) / 180;
+  $clockFrame.style.boxShadow =
+    `${(Math.sin(rad) * 24).toFixed(1)}px ${(Math.cos(rad) * 24).toFixed(1)}px ${(24 + Math.sin(rad) * 12).toFixed(1)}px rgba(0,0,0,${(0.04 + Math.abs(Math.sin(rad)) * 0.06).toFixed(3)})`;
 }
 setInterval(updateClock, 1000);
 updateClock();
@@ -205,12 +203,11 @@ function renderHomeArticles() {
     col.innerHTML = '<h4>📖 最新文章</h4><div class="empty-state" style="padding:20px;"><div class="icon" style="font-size:28px;">📝</div><p style="font-size:13px;">暂无文章</p></div>';
     return;
   }
-  const top3 = articles.slice(0, 3);
   let html = '<h4>📖 最新文章</h4>';
-  top3.forEach(a => {
+  articles.slice(0, 3).forEach(a => {
     html += `<div class="mini-card" onclick="document.getElementById('articles').scrollIntoView({behavior:'smooth'})">
       <div class="mini-title">${a.title || '无标题'}</div>
-      <div class="mini-meta">${a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN') : ''} · ${(a.summary || '暂无摘要').substring(0, 24)}${(a.summary||'').length > 24 ? '…' : ''}</div>
+      <div class="mini-meta">${formatDateCached(a.createdAt)} · ${truncate(a.summary, 24)}</div>
     </div>`;
   });
   col.innerHTML = html;
@@ -223,12 +220,11 @@ function renderHomeUpdates() {
     col.innerHTML = '<h4>💬 最新动态</h4><div class="empty-state" style="padding:20px;"><div class="icon" style="font-size:28px;">💬</div><p style="font-size:13px;">暂无动态</p></div>';
     return;
   }
-  const top3 = updates.slice(0, 3);
   let html = '<h4>💬 最新动态</h4>';
-  top3.forEach(u => {
+  updates.slice(0, 3).forEach(u => {
     html += `<div class="mini-card" onclick="document.getElementById('updates').scrollIntoView({behavior:'smooth'})">
-      <div class="mini-title">${(u.content || '无内容').substring(0, 30)}${(u.content||'').length > 30 ? '…' : ''}</div>
-      <div class="mini-meta">${u.createdAt ? new Date(u.createdAt).toLocaleDateString('zh-CN') : ''}</div>
+      <div class="mini-title">${truncate(u.content, 30)}</div>
+      <div class="mini-meta">${formatDateCached(u.createdAt)}</div>
     </div>`;
   });
   col.innerHTML = html;
@@ -251,7 +247,7 @@ function renderArticles() {
       <h2>${featured.title || '无标题'}</h2>
       <p>${featured.summary || '暂无摘要'}</p>
       <div class="meta">
-        ${featured.createdAt ? new Date(featured.createdAt).toLocaleDateString('zh-CN') : ''}
+        ${formatDateCached(featured.createdAt)}
         ${featured.tags ? featured.tags.map(t => `<span class="card-tag">${t}</span>`).join('') : ''}
       </div>
     </div>
@@ -269,8 +265,8 @@ function renderArticles() {
     pageItems.forEach(a => {
       html += `<div class="glass-card fade-up" onclick="showArticle('${a.id}')" style="cursor:pointer;">
         <h3>${a.title || '无标题'}</h3>
-        <div class="card-date">${a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN') : ''}</div>
-        <div class="card-summary">${(a.summary || '').substring(0, 80)}${(a.summary||'').length > 80 ? '...' : ''}</div>
+        <div class="card-date">${formatDateCached(a.createdAt)}</div>
+        <div class="card-summary">${truncate(a.summary, 80)}</div>
         ${a.tags ? a.tags.map(t => `<span class="card-tag">${t}</span>`).join('') : ''}
       </div>`;
     });

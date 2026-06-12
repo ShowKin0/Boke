@@ -53,9 +53,33 @@
     return div.innerHTML;
   }
 
+  // 简单缓存：最近 N 个结果
+  function memoize(fn, size = 64) {
+    const cache = new Map();
+    return (key) => {
+      if (cache.has(key)) return cache.get(key);
+      const val = fn(key);
+      if (cache.size >= size) cache.delete(cache.keys().next().value);
+      cache.set(key, val);
+      return val;
+    };
+  }
+
+  // 缓存版本的 escapeHtml（适合重复调用相同字符串的场景）
+  const escapeHtmlCached = memoize(escapeHtml);
+
+  // 受控截断：超过 maxLen 自动加 …
+  function truncate(str, maxLen) {
+    if (!str) return str ?? '';
+    return str.length > maxLen ? str.substring(0, maxLen) + '…' : str;
+  }
+
   function formatDate(date) {
     return date ? new Date(date).toLocaleDateString('zh-CN') : '';
   }
+
+  // 缓存版本的 formatDate（文章列表/动态列表经常重复格式化相同日期）
+  const formatDateCached = memoize(d => d ? new Date(d).toLocaleDateString('zh-CN') : '');
 
   function genId() {
     return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
@@ -74,7 +98,11 @@
     saveStore,
     syncToServer,
     escapeHtml,
+    escapeHtmlCached,
+    truncate,
+    memoize,
     formatDate,
+    formatDateCached,
     genId,
     now,
   };
