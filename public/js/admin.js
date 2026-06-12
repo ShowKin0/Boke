@@ -39,6 +39,23 @@ let currentTab = 'articles';
 
 function showToast(msg, type) { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast '+(type||'success'); t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
 
+// ===== 确认弹窗 =====
+let _confirmCb = null;
+function openConfirm(msg, onOk) {
+  _confirmCb = onOk;
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm() {
+  _confirmCb = null;
+  document.getElementById('confirmOverlay').classList.remove('open');
+}
+function confirmOk() {
+  const cb = _confirmCb;
+  closeConfirm();
+  if (cb) cb();
+}
+
 // ===== 批量删除 =====
 const selectedIds = { articles: new Set(), updates: new Set(), explores: new Set(), music: new Set() };
 
@@ -60,15 +77,16 @@ function toggleSelect(cb) {
 function batchDelete(key) {
   const ids = [...selectedIds[key]];
   if (!ids.length) { showToast('请先勾选要删除的项目', 'error'); return; }
-  if (!confirm(`确定删除选中的 ${ids.length} 项？`)) return;
-  let items = store[key] || [];
-  items = items.filter(i => !ids.includes(i.id));
-  store[key] = items;
-  saveStore(store);
-  syncToServer(key, items);
-  selectedIds[key].clear();
-  showToast(`已删除 ${ids.length} 项`);
-  window[key]?.load();
+  openConfirm(`确定删除选中的 ${ids.length} 项？`, () => {
+    let items = store[key] || [];
+    items = items.filter(i => !ids.includes(i.id));
+    store[key] = items;
+    saveStore(store);
+    syncToServer(key, items);
+    selectedIds[key].clear();
+    showToast(`已删除 ${ids.length} 项`);
+    window[key]?.load();
+  });
 }
 
 // ===== 富文本编辑器通用工厂 =====
@@ -293,6 +311,15 @@ document.getElementById('musicCoverInput').addEventListener('change', function(e
   });
   this.value = '';
 });
+// 探索图标图片上传
+document.getElementById('exploreIconInput').addEventListener('change', function(e) {
+  uploadFile(e.target.files[0], 2 * 1024 * 1024, {
+    sizeMsg: '图标超过 2MB 限制',
+    onOk(url) { document.getElementById('exploreIcon').value = url; showToast('图标已上传'); },
+    onFail(base64) { document.getElementById('exploreIcon').value = base64; showToast('图标已转为 base64'); },
+  });
+  this.value = '';
+});
 function showCoverPreview(url) {
   const preview = document.getElementById('musicCoverPreview');
   preview.style.display = 'block';
@@ -302,17 +329,13 @@ function showCoverPreview(url) {
   img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
   preview.appendChild(img);
 }
-// 代码语法高亮渲染（带缓存：相同 (code, lang) 直接返回上次结果）
-const _hlCache = new Map();
-const _HL_CACHE_MAX = 32;
+// 代码语法高亮渲染（带缓存）
+const _highlightMemo = window.Boke.memoize(function(key) {
+  const sepIdx = key.indexOf('\0');
+  return _highlightRaw(key.slice(sepIdx + 1), key.slice(0, sepIdx));
+}, 32);
 function highlightCodeText(code, lang) {
-  const key = lang + '\0' + code;
-  const hit = _hlCache.get(key);
-  if (hit !== undefined) return hit;
-  const result = _highlightRaw(code, lang);
-  if (_hlCache.size >= _HL_CACHE_MAX) _hlCache.delete(_hlCache.keys().next().value);
-  _hlCache.set(key, result);
-  return result;
+  return _highlightMemo(lang + '\0' + code);
 }
 
 function _highlightRaw(code, lang) {
@@ -633,6 +656,11 @@ function createCRUD(cfg) {
   let items = [];
   function load() {
     items = store[cfg.key] || [];
+    selectedIds[cfg.key].clear();
+    // 取消全选按钮（它们在表格外部，不会随 tbody 重绘重置）
+    document.querySelectorAll('.table-wrap input[type="checkbox"][onchange*="toggleSelectAll"]').forEach(el => {
+      if (el.closest(`#tab-${cfg.key}`)) el.checked = false;
+    });
     cfg.render(items);
   }
   function edit(id) {
@@ -677,12 +705,13 @@ function createCRUD(cfg) {
     cancel(); load();
   }
   function del(id) {
-    if (!confirm('确定删除？')) return;
-    if (cfg.onDelete) cfg.onDelete(items.find(i => i.id === id));
-    items = items.filter(i => i.id !== id);
-    store[cfg.key] = items; saveStore(store);
-    syncToServer(cfg.key, items);
-    showToast('已删除'); load();
+    openConfirm('确定删除？', () => {
+      if (cfg.onDelete) cfg.onDelete(items.find(i => i.id === id));
+      items = items.filter(i => i.id !== id);
+      store[cfg.key] = items; saveStore(store);
+      syncToServer(cfg.key, items);
+      showToast('已删除'); load();
+    });
   }
   return { load, edit, cancel, save, remove: del, get items() { return items; } };
 }
@@ -741,9 +770,6 @@ function togglePin(id) {
   articles.load();
 }
 
-// ===== 文章搜索与分页（由通用 adminList 接管） =====
-// 搜索时重置到第一页
-
 // ===== 动态 CRUD =====
 const updates = createCRUD({
   key: 'updates',
@@ -773,6 +799,16 @@ const updates = createCRUD({
 });
 
 // ===== 探索 CRUD =====
+let exploreCategoryTab = 'blog';
+
+function switchExploreTab(cat) {
+  exploreCategoryTab = cat;
+  document.querySelectorAll('.explore-sub-tab').forEach(el => el.classList.toggle('active', el.dataset.ecat === cat));
+  document.getElementById('exploreCategory').value = cat;
+  explores.cancel();
+  explores.load();
+}
+
 const explores = createCRUD({
   key: 'explores',
   editId: 'exploreEditId', formTitleId: 'exploreFormTitle', submitBtnId: null, cancelBtnId: 'exploreCancelBtn',
@@ -792,17 +828,71 @@ const explores = createCRUD({
     icon: document.getElementById('exploreIcon').value.trim()||'🔗',
     description: document.getElementById('exploreDescription').innerHTML.trim(),
   }),
-  onCancel: () => { document.getElementById('exploreCategory').value = 'website'; },
+  onCancel: () => { document.getElementById('exploreCategory').value = exploreCategoryTab; },
   render: (items) => {
     const tbody = document.getElementById('exploresTableBody');
-    const labels = { website: '🌐 网站', source: '📦 源码', video: '🎬 视频' };
-    if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">暂无项目</td></tr>'; return; }
-    const filtered = adminList.getFiltered('explores', items);
+    const labels = { website: '🌐 网站', source: '📦 源码', video: '🎬 视频', blog: '📝 博客' };
+    const catItems = items.filter(i => i.category === exploreCategoryTab);
+    if (!catItems.length) { tbody.innerHTML = '<tr><td colspan="5" class="table-empty">暂无项目</td></tr>'; return; }
+    const filtered = adminList.getFiltered('explores', catItems);
     const { items: paged, page, totalPages } = adminList.getPage('explores', filtered);
-    tbody.innerHTML = paged.map(e => `<tr><td><input type="checkbox" class="batch-checkbox" data-key="explores" data-id="${e.id}" onchange="toggleSelect(this)"></td><td>${escapeHtml(e.icon||'🔗')} ${escapeHtml(e.title||'')}</td><td>${labels[e.category]||e.category}</td><td><button class="btn-sm edit" onclick="explores.edit('${e.id}')">编辑</button><button class="btn-sm del" onclick="explores.remove('${e.id}')">删除</button></td></tr>`).join('');
-    tbody.innerHTML += adminList.pageNav('explores', page, totalPages, 'explores', 4);
+    tbody.innerHTML = paged.map((e, i) => {
+      const isImgIcon = e.icon && (e.icon.startsWith('data:') || e.icon.startsWith('data/') || e.icon.startsWith('http'));
+      const iconDisplay = isImgIcon ? `<img src="${escapeHtml(e.icon)}" class="explore-table-icon">` : (escapeHtml(e.icon||'🔗'));
+      return `<tr draggable="true" data-id="${e.id}" data-index="${i}"
+        ondragstart="exploreDragStart(event)" ondragover="exploreDragOver(event)" ondrop="exploreDrop(event)" ondragend="exploreDragEnd(event)">
+        <td><input type="checkbox" class="batch-checkbox" data-key="explores" data-id="${e.id}" onchange="toggleSelect(this)"></td>
+        <td class="drag-handle">⠿</td>
+        <td>${iconDisplay} ${escapeHtml(e.title||'')}</td>
+        <td>${labels[e.category]||e.category}</td>
+        <td><button class="btn-sm edit" onclick="explores.edit('${e.id}')">编辑</button><button class="btn-sm del" onclick="explores.remove('${e.id}')">删除</button></td>
+      </tr>`;
+    }).join('');
+    tbody.innerHTML += adminList.pageNav('explores', page, totalPages, 'explores', 5);
   },
 });
+
+// ===== 探索拖拽排序 =====
+let _dragSrcId = null;
+function exploreDragStart(e) {
+  _dragSrcId = e.currentTarget.dataset.id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function exploreDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const tr = e.currentTarget;
+  if (tr.dataset.id === _dragSrcId) return;
+  tr.classList.add('drag-over');
+}
+function exploreDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('#exploresTableBody tr').forEach(tr => tr.classList.remove('drag-over'));
+}
+function exploreDrop(e) {
+  e.preventDefault();
+  const tr = e.currentTarget;
+  tr.classList.remove('drag-over');
+  const fromId = _dragSrcId;
+  const toId = tr.dataset.id;
+  if (fromId === toId) return;
+
+  let items = store.explores || [];
+  const fromIdx = items.findIndex(i => i.id === fromId);
+  const toIdx = items.findIndex(i => i.id === toId);
+  if (fromIdx === -1 || toIdx === -1) return;
+
+  // 移动元素
+  const [moved] = items.splice(fromIdx, 1);
+  items.splice(toIdx, 0, moved);
+
+  store.explores = items;
+  saveStore(store);
+  syncToServer('explores', items);
+  explores.load();
+  showToast('排序已更新');
+}
 
 // ===== 音乐 CRUD =====
 const music = createCRUD({
@@ -864,6 +954,11 @@ function loadAll() {
   try {
     store = loadStoreOrDefault();
     articles.load(); updates.load(); explores.load(); music.load(); loadTheme();
+    // 初始化探索子标签
+    document.querySelectorAll('.explore-sub-tab').forEach(el => {
+      el.addEventListener('click', () => switchExploreTab(el.dataset.ecat));
+    });
+    document.getElementById('exploreCategory').value = exploreCategoryTab;
     switchTab('articles');
   } catch(e) { showToast('加载出错: '+e.message, 'error'); }
 }

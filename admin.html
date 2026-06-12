@@ -139,18 +139,30 @@
     <!-- 探索管理 -->
     <div class="tab-panel" id="tab-explores" style="display:none;">
       <h3><span>🔍</span> 探索管理</h3>
+      <div class="explore-sub-tabs" id="exploreSubTabs">
+        <button class="explore-sub-tab active" data-ecat="blog">📝 博客推荐</button>
+        <button class="explore-sub-tab" data-ecat="website">🌐 网站推荐</button>
+        <button class="explore-sub-tab" data-ecat="source">📦 源码</button>
+        <button class="explore-sub-tab" data-ecat="video">🎬 学习视频</button>
+      </div>
       <div class="form-wrap" id="exploreForm">
         <h4 id="exploreFormTitle">新增项目</h4>
         <input type="hidden" id="exploreEditId">
         <div class="form-row">
           <div class="form-group"><label>标题</label><input id="exploreTitle" placeholder="标题"></div>
-          <div class="form-group"><label>分类</label>
-            <select id="exploreCategory"><option value="website">🌐 网站推荐</option><option value="source">📦 源码</option><option value="video">🎬 学习视频</option></select>
-          </div>
+          <div style="display:none;"><div class="form-group"><label>分类</label>
+            <select id="exploreCategory"><option value="website">🌐 网站推荐</option><option value="source">📦 源码</option><option value="video">🎬 学习视频</option><option value="blog">📝 博客推荐</option></select>
+          </div></div>
         </div>
         <div class="form-row">
           <div class="form-group"><label>链接 URL</label><input id="exploreUrl" placeholder="https://..."></div>
-          <div class="form-group"><label>图标</label><input id="exploreIcon" placeholder="🔗" value="🔗"></div>
+          <div class="form-group"><label>图标</label>
+            <div style="display:flex;gap:6px;">
+              <input id="exploreIcon" placeholder="🔗 或上传图标图片" value="🔗" style="flex:1;">
+              <button type="button" class="btn-sm edit" onclick="document.getElementById('exploreIconInput').click()">🖼️ 上传</button>
+            </div>
+            <input type="file" id="exploreIconInput" accept="image/*" style="display:none">
+          </div>
         </div>
         <div class="form-group"><label>描述</label><div id="exploreDescContainer"></div></div>
         <div class="form-actions">
@@ -166,7 +178,7 @@
   </div>
   <input type="hidden" id="explorePage" value="1">
 </div>
-<table><thead><tr><th style="width:32px;"></th><th>标题</th><th>分类</th><th>操作</th></tr></thead><tbody id="exploresTableBody"></tbody></table></div>
+<table><thead><tr><th style="width:32px;"></th><th style="width:30px;">⠿</th><th>标题</th><th>分类</th><th>操作</th></tr></thead><tbody id="exploresTableBody"></tbody></table></div>
     </div>
 
     <!-- 音乐管理 -->
@@ -233,6 +245,17 @@
           <button class="btn-secondary" onclick="resetTheme()">重置默认</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 确认弹窗 ===== -->
+<div class="confirm-overlay" id="confirmOverlay" onclick="closeConfirm()">
+  <div class="confirm-modal" onclick="event.stopPropagation()">
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-actions">
+      <button class="btn-secondary" onclick="closeConfirm()">取消</button>
+      <button class="btn-primary confirm-danger" id="confirmOkBtn" onclick="confirmOk()">确定删除</button>
     </div>
   </div>
 </div>

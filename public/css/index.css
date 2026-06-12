@@ -422,6 +422,10 @@ body {
 }
 .explore-item:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(0,0,0,0.12); }
 .explore-item .icon { font-size: 32px; margin-bottom: 10px; display: block; }
+.explore-item .explore-icon-img {
+  width: 48px; height: 48px; border-radius: 12px; object-fit: cover;
+  margin-bottom: 10px; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
 .explore-item h4 { font-size: 16px; margin-bottom: 6px; }
 .explore-item p { font-size: 13px; color: var(--text-secondary); }
 .explore-item .explore-category {

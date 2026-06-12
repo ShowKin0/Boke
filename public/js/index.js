@@ -1,5 +1,5 @@
 // ===== 状态管理 =====
-const { loadStore, saveStore, escapeHtml } = window.Boke;
+const { loadStore, saveStore, escapeHtml, truncate, formatDateCached } = window.Boke;
 
 // 检查 ?clear 参数，清除 localStorage 缓存
 if (window.location.search.includes('clear')) {
@@ -10,7 +10,7 @@ if (window.location.search.includes('clear')) {
   window.history.replaceState({}, '', url);
 }
 let articles = [], updates = [], explores = [], musicList = [], theme = {};
-let currentCategory = 'all';
+let currentCategory = 'blog';
 let currentSongIndex = 0;
 let isPlaying = false;
 let articlesPage = 1;
@@ -21,7 +21,6 @@ let archiveMode = false;
 const ARTICLE_PAGE_SIZE = 9;
 const UPDATE_PAGE_SIZE = 4;
 const audio = new Audio();
-const { truncate, formatDateCached } = window.Boke;
 
 
 // ===== 从 localStorage / data 文件加载数据 =====
@@ -39,7 +38,7 @@ function applyData(data) {
   renderArticles();
   renderUpdates();
   renderExploreTabs();
-  renderExplores();
+  renderExplores(currentCategory);
   renderPlaylist();
   initFadeUp();
 }
@@ -227,7 +226,6 @@ function renderHomeUpdates() {
   }
   let html = '<h4>💬 最新动态</h4>';
   updates.slice(0, 5).forEach(u => {
-    const textOnly = u.content ? u.content.replace(/<[^>]+>/g, '').trim() : '';
     html += `<div class="mini-card" onclick="document.getElementById('updates').scrollIntoView({behavior:'smooth'})">
       <div class="mini-content">${u.content || ''}</div>
       <div class="mini-meta">${formatDateCached(u.createdAt)}</div>
@@ -444,15 +442,12 @@ function changeUpdatesPage(page) {
 }
 
 // ===== 探索区 =====
-const CATEGORY_LABELS = { website:'🌐 网站推荐', source:'📦 源码', video:'🎬 学习视频' };
+const CATEGORY_ORDER = ['blog', 'website', 'source', 'video'];
+const CATEGORY_LABELS = { blog:'📝 博客推荐', website:'🌐 网站推荐', source:'📦 源码', video:'🎬 学习视频' };
 function renderExploreTabs() {
   const tabs = document.getElementById('exploreTabs');
-  // 保留"全部"按钮，去重动态生成其余标签
-  const allBtn = tabs.querySelector('[data-category="all"]');
   tabs.innerHTML = '';
-  tabs.appendChild(allBtn);
-  const cats = [...new Set(explores.map(e => e.category).filter(Boolean))];
-  cats.forEach(cat => {
+  CATEGORY_ORDER.forEach(cat => {
     const btn = document.createElement('button');
     btn.className = 'explore-tab';
     btn.dataset.category = cat;
@@ -463,16 +458,19 @@ function renderExploreTabs() {
 }
 function renderExplores(category) {
   const container = document.getElementById('exploreContainer');
-  const filtered = category && category !== 'all' ? explores.filter(e => e.category === category) : explores;
+  const filtered = category ? explores.filter(e => e.category === category) : explores;
   if (!filtered.length) {
-    container.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🔍</div><p>暂无探索项目</p></div>`;
+    container.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🔍</div><p>暂无${CATEGORY_LABELS[category] || ''}项目</p></div>`;
     return;
   }
   let html = '';
   filtered.forEach(e => {
     const categoryLabel = CATEGORY_LABELS[e.category] || e.category || '其他';
+    const iconHtml = (e.icon && (e.icon.startsWith('data:') || e.icon.startsWith('data/') || e.icon.startsWith('http')))
+      ? `<img class="explore-icon-img" src="${escapeHtml(e.icon)}" alt="">`
+      : `<span class="icon">${e.icon || '🔗'}</span>`;
     html += `<a class="explore-item fade-up" href="${e.url || '#'}" target="_blank" rel="noopener">
-      <span class="icon">${e.icon || '🔗'}</span>
+      ${iconHtml}
       <h4>${escapeHtml(e.title || '')}</h4>
       <p>${e.description || ''}</p>
       <span class="explore-category">${categoryLabel}</span>

@@ -114,6 +114,24 @@ tr:hover td { background: rgba(255,176,192,0.04); }
   transition: border-color 0.2s;
 }
 .admin-search-input:focus { border-color: var(--primary); }
+.explore-table-icon { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; vertical-align: middle; }
+.drag-handle { cursor: grab; color: var(--text2); font-size: 16px; user-select: none; text-align: center; }
+.drag-handle:active { cursor: grabbing; }
+tr.dragging { opacity: 0.4; }
+tr.drag-over td { background: rgba(135,206,235,0.15) !important; }
+tr.drag-over .drag-handle { color: var(--secondary); }
+
+/* ===== 探索子标签 ===== */
+.explore-sub-tabs {
+  display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.explore-sub-tab {
+  padding: 8px 18px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.06);
+  background: var(--card-bg); font-size: 14px; cursor: pointer; color: var(--text2);
+  transition: all 0.2s; font-family: inherit;
+}
+.explore-sub-tab:hover { border-color: var(--primary); color: var(--text); }
+.explore-sub-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
 
 /* ===== 后台搜索与分页 ===== */
 .admin-pagination {
@@ -130,3 +148,35 @@ tr:hover td { background: rgba(255,176,192,0.04); }
 @media (max-width: 768px) {
   .admin-search-input { width: 120px !important; }
 }
+
+/* ===== 确认弹窗 ===== */
+.confirm-overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 9998; background: rgba(0,0,0,0.4); backdrop-filter: blur(6px);
+  align-items: center; justify-content: center;
+}
+.confirm-overlay.open { display: flex; }
+.confirm-modal {
+  background: var(--card-bg); backdrop-filter: blur(20px);
+  border-radius: 16px; border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  padding: 28px; width: 90%; max-width: 380px;
+}
+.confirm-msg {
+  font-size: 16px; text-align: center; margin-bottom: 24px; color: var(--text); line-height: 1.6;
+}
+.confirm-actions {
+  display: flex; gap: 10px; justify-content: center;
+}
+.confirm-actions .btn-secondary {
+  padding: 10px 24px; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px;
+  background: rgba(255,255,255,0.5); color: var(--text); font-size: 14px;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.confirm-actions .btn-secondary:hover { background: rgba(0,0,0,0.05); }
+.confirm-danger {
+  padding: 10px 24px; border: none; border-radius: 10px;
+  background: #e74c3c; color: white; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.confirm-danger:hover { opacity: 0.85; }
