@@ -15,6 +15,9 @@ let currentSongIndex = 0;
 let isPlaying = false;
 let articlesPage = 1;
 let updatesPage = 1;
+let selectedTag = null;
+let searchQuery = '';
+let archiveMode = false;
 const ARTICLE_PAGE_SIZE = 9;
 const UPDATE_PAGE_SIZE = 4;
 const audio = new Audio();
@@ -231,30 +234,124 @@ function renderHomeUpdates() {
 }
 
 // ===== 文章区 =====
+function getArticleTags() {
+  const tagSet = new Set();
+  articles.forEach(a => (a.tags || []).forEach(t => tagSet.add(t)));
+  return [...tagSet].sort();
+}
+
+function renderArticleToolbar() {
+  const container = document.getElementById('articleToolbar');
+  if (!container) return;
+  const tags = getArticleTags();
+  let tagHtml = tags.map(t => `<button class="article-tag-btn ${selectedTag === t ? 'active' : ''}" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('');
+  container.innerHTML = `
+    <div class="article-toolbar-row">
+      <div class="article-search-wrap">
+        <input id="articleSearch" type="text" placeholder="搜索文章..." value="${escapeHtml(searchQuery)}" class="article-search-input">
+      </div>
+      <button class="archive-toggle-btn" onclick="toggleArchive()" title="切换归档视图">${archiveMode ? '📋 网格视图' : '📅 归档视图'}</button>
+    </div>
+    ${tags.length ? `<div class="article-tags-bar">${tagHtml}</div>` : ''}
+  `;
+  // 搜索输入防抖
+  const searchInput = document.getElementById('articleSearch');
+  if (searchInput) {
+    let timer;
+    searchInput.addEventListener('input', function() {
+      clearTimeout(timer);
+      timer = setTimeout(() => { searchQuery = this.value; articlesPage = 1; renderArticles(); renderArticleToolbar(); }, 300);
+    });
+  }
+  // 标签点击
+  container.querySelectorAll('.article-tag-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const tag = this.dataset.tag;
+      selectedTag = selectedTag === tag ? null : tag;
+      articlesPage = 1;
+      renderArticles();
+      renderArticleToolbar();
+    });
+  });
+}
+
+function toggleArchive() {
+  archiveMode = !archiveMode;
+  articlesPage = 1;
+  renderArticles();
+  renderArticleToolbar();
+}
+
+function renderArchiveView(articles) {
+  if (!articles.length) return '<div class="empty-state"><div class="icon">📝</div><p>暂无文章</p></div>';
+  // 按年月分组
+  const groups = {};
+  articles.forEach(a => {
+    const d = new Date(a.createdAt);
+    const key = `${d.getFullYear()}年${d.getMonth() + 1}月`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(a);
+  });
+  const sortedKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+  let html = '';
+  sortedKeys.forEach(key => {
+    html += `<div class="archive-group fade-up"><h3 class="archive-month">${key}</h3><div class="archive-list">`;
+    groups[key].forEach(a => {
+      const day = new Date(a.createdAt).getDate();
+      html += `<div class="archive-item" onclick="showArticle('${a.id}')">
+        <span class="archive-day">${day}日</span>
+        <span class="archive-title">${escapeHtml(a.title || '无标题')}</span>
+        ${a.tags && a.tags.length ? a.tags.map(t => `<span class="card-tag">${escapeHtml(t)}</span>`).join('') : ''}
+      </div>`;
+    });
+    html += '</div></div>';
+  });
+  return html;
+}
+
 function renderArticles() {
   const container = document.getElementById('articlesContainer');
   const loading = document.getElementById('articlesLoading');
   if (loading) loading.style.display = 'none';
-  if (!articles.length) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">📝</div><p>暂无文章</p></div>`;
+
+  // 搜索 + 标签过滤
+  let filtered = [...articles];
+  if (selectedTag) filtered = filtered.filter(a => a.tags && a.tags.includes(selectedTag));
+  if (searchQuery.trim()) {
+    const q = searchQuery.trim().toLowerCase();
+    filtered = filtered.filter(a => (a.title||'').toLowerCase().includes(q) || (a.summary||'').toLowerCase().includes(q) || (a.content||'').toLowerCase().includes(q) || (a.tags||[]).some(t => t.toLowerCase().includes(q)));
+  }
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📝</div><p>${articles.length ? '没有匹配的文章' : '暂无文章'}</p></div>`;
     return;
   }
+
+  if (archiveMode) {
+    container.innerHTML = renderArchiveView(filtered);
+    initFadeUp();
+    return;
+  }
+
   let html = '';
   // 置顶文章（如果有）
-  const featured = articles.find(a => a.pinned) || articles[0];
+  const featured = filtered.find(a => a.pinned) || filtered[0];
+  const coverUrl = featured.cover;
   html += `<div class="article-featured fade-up" onclick="showArticle('${featured.id}')" style="cursor:pointer;">
+    ${coverUrl ? `<div class="article-featured-cover"><img src="${coverUrl}" alt=""></div>` : ''}
     <div class="article-featured-body">
       <h2>${featured.title || '无标题'}</h2>
       <p>${featured.summary || '暂无摘要'}</p>
       <div class="meta">
         ${formatDateCached(featured.createdAt)}
-        ${featured.tags ? featured.tags.map(t => `<span class="card-tag">${t}</span>`).join('') : ''}
+        ${featured.tags ? featured.tags.map(t => `<span class="card-tag">${escapeHtml(t)}</span>`).join('') : ''}
+        ${featured.views ? `<span class="view-count">👁️ ${featured.views}</span>` : ''}
       </div>
     </div>
   </div>`;
 
   // 其余文章（分页，排除置顶那篇）
-  const rest = articles.filter(a => a.id !== featured.id);
+  const rest = filtered.filter(a => a.id !== featured.id);
   if (rest.length) {
     const totalPages = Math.ceil(rest.length / ARTICLE_PAGE_SIZE);
     if (articlesPage > totalPages) articlesPage = totalPages;
@@ -263,11 +360,14 @@ function renderArticles() {
 
     html += '<div class="articles-grid" style="margin-top:24px;">';
     pageItems.forEach(a => {
-      html += `<div class="glass-card fade-up" onclick="showArticle('${a.id}')" style="cursor:pointer;">
-        <h3>${a.title || '无标题'}</h3>
-        <div class="card-date">${formatDateCached(a.createdAt)}</div>
-        <div class="card-summary">${truncate(a.summary, 80)}</div>
-        ${a.tags ? a.tags.map(t => `<span class="card-tag">${t}</span>`).join('') : ''}
+      html += `<div class="glass-card fade-up" onclick="showArticle('${a.id}')" style="cursor:pointer;${a.cover ? 'padding:0;overflow:hidden;' : ''}">
+        ${a.cover ? `<div class="article-card-cover"><img src="${a.cover}" alt=""></div>` : ''}
+        <div class="article-card-body" style="${a.cover ? 'padding:16px 20px;' : ''}">
+          <h3>${a.title || '无标题'}</h3>
+          <div class="card-date">${formatDateCached(a.createdAt)} ${a.views ? `👁️ ${a.views}` : ''}</div>
+          <div class="card-summary">${truncate(a.summary, 80)}</div>
+          ${a.tags ? a.tags.map(t => `<span class="card-tag">${escapeHtml(t)}</span>`).join('') : ''}
+        </div>
       </div>`;
     });
     html += '</div>';
@@ -373,28 +473,128 @@ function renderExplores(category) {
 }
 
 // ===== 文章详情 =====
+function estimateReadingTime(html) {
+  if (!html) return '';
+  const text = html.replace(/<[^>]+>/g, '').replace(/\s+/g, '');
+  // 中文阅读速度约 400 字/分钟
+  const mins = Math.ceil(text.length / 400);
+  if (mins < 1) return '不到 1 分钟';
+  return `约 ${mins} 分钟`;
+}
+
+function generateTOC(html) {
+  if (!html) return '';
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const headings = div.querySelectorAll('h2, h3');
+  if (!headings.length) return '';
+  let toc = '<nav class="article-toc"><h4>📑 目录</h4><ul>';
+  headings.forEach((h, i) => {
+    const id = `toc-${i}`;
+    h.id = id;
+    const indent = h.tagName === 'H3' ? ' style="padding-left:16px;"' : '';
+    toc += `<li${indent}><a href="#${id}" onclick="event.preventDefault();document.getElementById('${id}').scrollIntoView({behavior:'smooth'})">${escapeHtml(h.textContent)}</a></li>`;
+  });
+  toc += '</ul></nav>';
+  // 返回修改后的 HTML 和 TOC
+  return { toc, html: div.innerHTML };
+}
+
 function showArticle(id) {
   const a = articles.find(x => x.id === id);
   if (!a) return;
   const tags = a.tags ? a.tags.map(t => `<span class="card-tag" style="display:inline-block;padding:2px 12px;background:rgba(135,206,235,0.15);color:var(--secondary);border-radius:6px;font-size:13px;margin-right:4px;">${t}</span>`).join('') : '';
   const date = a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN', {year:'numeric',month:'long',day:'numeric'}) : '';
+  const readingTime = estimateReadingTime(a.content);
+  const tocResult = generateTOC(a.content);
+  const finalContent = tocResult ? tocResult.html : (a.content || '');
+  const tocHtml = tocResult ? tocResult.toc : '';
+
+  // SEO: 动态更新标题
+  document.title = a.title ? `${a.title} - Bōkè` : 'Bōkè - 个人博客';
+
   document.getElementById('articleDetailContent').innerHTML = `
+    ${a.cover ? `<div class="article-detail-cover"><img src="${a.cover}" alt=""></div>` : ''}
     <h1>${escapeHtml(a.title || '')}</h1>
-    <div class="meta">${date} ${tags}</div>
-    <div class="content prose">${a.content || ''}</div>
+    <div class="meta">${date} ${readingTime ? `<span class="reading-time">📖 ${readingTime}</span>` : ''} ${tags}</div>
+    <div class="article-detail-layout">
+      ${tocHtml ? `<div class="article-detail-sidebar">${tocHtml}</div>` : ''}
+      <div class="content prose${tocHtml ? ' with-toc' : ''}">${finalContent}</div>
+    </div>
   `;
   document.getElementById('articleDetail').classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  // 代码块复制按钮
+  addCodeCopyButtons();
+
+  // 图片缩放光标（点击由全局委派处理）
+  document.querySelectorAll('.article-detail-card .prose img').forEach(img => {
+    img.style.cursor = 'zoom-in';
+  });
+
+  // 阅读计数
+  if (window.Boke && window.Boke.incrementView) {
+    window.Boke.incrementView('articles', a.id);
+    a.views = (a.views || 0) + 1;
+  }
 }
+
 function closeArticle() {
   document.getElementById('articleDetail').classList.remove('open');
   document.body.style.overflow = '';
+  // 恢复标题
+  document.title = 'Bōkè - 个人博客';
 }
-document.getElementById('articleDetail').addEventListener('click', (e) => {
-  if (e.target.closest('.article-detail-card')) return;
-  closeArticle();
+
+function addCodeCopyButtons() {
+  document.querySelectorAll('.article-detail-card .prose pre').forEach(pre => {
+    if (pre.querySelector('.copy-btn')) return;
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = '📋 复制';
+    btn.onclick = async function() {
+      const code = pre.querySelector('code')?.textContent || pre.textContent;
+      try {
+        await navigator.clipboard.writeText(code);
+        btn.textContent = '✅ 已复制';
+        setTimeout(() => { btn.textContent = '📋 复制'; }, 2000);
+      } catch {
+        btn.textContent = '❌ 失败';
+        setTimeout(() => { btn.textContent = '📋 复制'; }, 2000);
+      }
+    };
+    pre.style.position = 'relative';
+    pre.appendChild(btn);
+  });
+}
+
+// ===== 灯箱 =====
+function openLightbox(src) {
+  const lb = document.getElementById('lightbox');
+  const img = document.getElementById('lightboxImg');
+  if (!lb || !img) return;
+  img.src = src;
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  const lb = document.getElementById('lightbox');
+  if (!lb) return;
+  lb.classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeLightbox();
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeArticle(); });
+
+// ===== 全局图片点击 → 灯箱（动态、文章等区域的图片） =====
+document.addEventListener('click', (e) => {
+  const img = e.target.closest('.update-content img, .article-detail-card .prose img');
+  if (img && !e.target.closest('.copy-btn, .lightbox')) {
+    openLightbox(img.src);
+  }
+});
 
 // ===== 音乐播放器 =====
 function renderPlaylist() {

@@ -12,14 +12,14 @@ function createServer() {
       res.writeHead(204, {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       });
       res.end();
       return;
     }
 
     try {
-      if (req.url.startsWith('/api/')) {
+      if (req.url.startsWith('/api/') || req.url === '/feed.xml' || req.url === '/sitemap.xml') {
         await handleApi(req, res);
         return;
       }

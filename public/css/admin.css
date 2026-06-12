@@ -106,3 +106,19 @@ tr:hover td { background: rgba(255,176,192,0.04); }
 .code-modal-footer .btn-primary:hover { background:#b368d0; }
 @media (max-width: 768px) { .admin-sidebar { width: 60px; padding: 16px 8px; } .admin-sidebar h2 { font-size: 0; } .admin-sidebar h2::after { content: 'B'; font-size: 20px; } .admin-nav-item { font-size: 0; padding: 10px; text-align: center; } .admin-content { margin-left: 60px; padding: 16px; } .form-row { grid-template-columns: 1fr; } .color-picker-grid { grid-template-columns: 1fr 1fr; } .code-modal-inner { width:95%; max-height:90vh; } }
 .rich-text { line-height:1.7; }
+
+/* ===== 后台搜索与分页 ===== */
+.admin-pagination {
+  display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px;
+}
+.admin-pagination .page-btn {
+  padding: 4px 12px; border: 1px solid rgba(0,0,0,0.08); border-radius: 6px;
+  background: white; cursor: pointer; font-size: 12px; transition: all 0.2s;
+}
+.admin-pagination .page-btn:hover:not(:disabled) { background: var(--primary); color: white; }
+.admin-pagination .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.admin-pagination span { font-size: 13px; color: var(--text2); }
+.pagination-row td { padding: 8px 16px; background: rgba(255,255,255,0.2); }
+@media (max-width: 768px) {
+  #articleSearchInput { width: 120px !important; }
+}

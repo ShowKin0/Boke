@@ -44,8 +44,14 @@
         <input type="hidden" id="articleEditId">
         <div class="form-group"><label>标题</label><input id="articleTitle" placeholder="文章标题"></div>
         <div class="form-row">
-          <div class="form-group"><label>摘要</label><textarea id="articleSummary" placeholder="文章摘要" rows="2"></textarea></div>
+          <div class="form-group"><label>封面图片 URL</label>
+            <div style="display:flex;gap:6px;"><input id="articleCover" placeholder="可选封面图片 URL 或上传"><button type="button" class="btn-sm edit" onclick="document.getElementById('coverFileInput').click()">🖼️ 上传封面</button></div>
+            <input type="file" id="coverFileInput" accept="image/*" style="display:none">
+          </div>
           <div class="form-group"><label>标签（逗号分隔）</label><input id="articleTags" placeholder="前端, CSS, 设计"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>摘要</label><textarea id="articleSummary" placeholder="文章摘要" rows="2"></textarea></div>
         </div>
         <div class="form-group"><label>内容</label>
           <div id="articleEditorContainer"></div>
@@ -96,11 +102,15 @@
           <button class="btn-secondary" onclick="articles.cancel()" style="display:none" id="articleCancelBtn">取消</button>
         </div>
       </div>
-      <div class="table-wrap" id="articlesTableWrap"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);">
+      <div class="table-wrap" id="articlesTableWrap"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);flex-wrap:wrap;gap:8px;">
   <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('articles')"> 全选</label>
-  <button class="btn-sm del" onclick="batchDelete('articles')">🗑 批量删除</button>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <input id="articleSearchInput" placeholder="搜索文章..." oninput="adminList.filter('articles', ()=>articles.load())" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:13px;background:var(--card-bg);width:180px;">
+    <button class="btn-sm del" onclick="batchDelete('articles')">🗑 批量删除</button>
+  </div>
+  <input type="hidden" id="articlePage" value="1">
 </div>
-<table><thead><tr><th style="width:32px;"></th><th>标题</th><th>标签</th><th>日期</th><th>操作</th><th>置顶</th></tr></thead><tbody id="articlesTableBody"></tbody></table></div>
+<table><thead><tr><th style="width:32px;"></th><th>标题</th><th>标签</th><th>日期</th><th>👁️</th><th>操作</th><th>置顶</th></tr></thead><tbody id="articlesTableBody"></tbody></table></div>
     </div>
 
     <!-- 动态管理 -->
@@ -115,9 +125,13 @@
           <button class="btn-secondary" onclick="updates.cancel()" style="display:none" id="updateCancelBtn">取消</button>
         </div>
       </div>
-      <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('updates')"> 全选</label>
-        <button class="btn-sm del" onclick="batchDelete('updates')">🗑 批量删除</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input id="updateSearchInput" placeholder="搜索动态..." oninput="adminList.filter('updates', ()=>updates.load())" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:13px;background:var(--card-bg);width:180px;">
+          <button class="btn-sm del" onclick="batchDelete('updates')">🗑 批量删除</button>
+        </div>
+        <input type="hidden" id="updatePage" value="1">
       </div>
       <div id="updatesList"></div>
     </div>
@@ -146,7 +160,11 @@
       </div>
       <div class="table-wrap"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);">
   <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('explores')"> 全选</label>
-  <button class="btn-sm del" onclick="batchDelete('explores')">🗑 批量删除</button>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <input id="exploreSearchInput" placeholder="搜索探索..." oninput="adminList.filter('explores', ()=>explores.load())" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:13px;background:var(--card-bg);width:160px;">
+    <button class="btn-sm del" onclick="batchDelete('explores')">🗑 批量删除</button>
+  </div>
+  <input type="hidden" id="explorePage" value="1">
 </div>
 <table><thead><tr><th style="width:32px;"></th><th>标题</th><th>分类</th><th>操作</th></tr></thead><tbody id="exploresTableBody"></tbody></table></div>
     </div>
@@ -185,7 +203,11 @@
       </div>
       <div class="table-wrap"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);">
   <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('music')"> 全选</label>
-  <button class="btn-sm del" onclick="batchDelete('music')">🗑 批量删除</button>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <input id="musicSearchInput" placeholder="搜索歌曲..." oninput="adminList.filter('music', ()=>music.load())" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:13px;background:var(--card-bg);width:160px;">
+    <button class="btn-sm del" onclick="batchDelete('music')">🗑 批量删除</button>
+  </div>
+  <input type="hidden" id="musicPage" value="1">
 </div>
 <table><thead><tr><th style="width:32px;"></th><th>歌曲</th><th>歌手</th><th>类型</th><th>操作</th></tr></thead><tbody id="musicTableBody"></tbody></table></div>
     </div>

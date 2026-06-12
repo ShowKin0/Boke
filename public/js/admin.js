@@ -11,13 +11,26 @@ const {
   truncate,
   formatDate,
   memoize,
+  getToken,
+  saveToken,
+  clearToken,
+  loginWithServer,
+  logoutFromServer,
 } = window.Boke;
+
+const API_BASE = '';
 
 // ===== 服务器同步 =====
 async function syncToServer(type, data) {
   try {
-    await syncDataToServer(type, data);
+    await syncDataToServer(type, data, getToken());
   } catch (e) {
+    // 检查是否是 401 未授权
+    if (e.message && e.message.includes('401')) {
+      showToast('登录已过期，请重新登录', 'error');
+      setTimeout(() => logout(), 1500);
+      return;
+    }
     // 服务器未运行时静默降级
     console.warn('服务器未运行，数据仅保存在 localStorage');
   }
@@ -57,11 +70,7 @@ function batchDelete(key) {
   syncToServer(key, items);
   selectedIds[key].clear();
   showToast(`已删除 ${ids.length} 项`);
-  // 重新加载对应面板
-  if (key === 'articles') articles.load();
-  else if (key === 'updates') updates.load();
-  else if (key === 'explores') explores.load();
-  else if (key === 'music') music.load();
+  window[key]?.load();
 }
 
 // ===== 富文本编辑器通用工厂 =====
@@ -231,7 +240,7 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
     try {
       const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
         body: JSON.stringify({ file: base64, name: file.name }),
       });
       if (res.ok) {
@@ -250,6 +259,36 @@ document.getElementById('imageFileInput').addEventListener('change', function(e)
   reader.readAsDataURL(file);
   this.value = '';
 });
+// 文章封面上传
+document.getElementById('coverFileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('封面图片超过 5MB 限制', 'error');
+    this.value = ''; return;
+  }
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    const base64 = ev.target.result;
+    try {
+      const res = await fetch(`${API_BASE}/api/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify({ file: base64, name: file.name }),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        document.getElementById('articleCover').value = result.url;
+        showToast('封面已上传');
+        return;
+      }
+    } catch { console.warn('封面上传失败'); }
+    document.getElementById('articleCover').value = base64;
+    showToast('封面已转为 base64');
+  };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
 // 音乐文件上传 — 上传到 data/uploads/ 并填入 URL 输入框
 document.getElementById('musicFileInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
@@ -264,7 +303,7 @@ document.getElementById('musicFileInput').addEventListener('change', function(e)
     try {
       const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
         body: JSON.stringify({ file: base64, name: file.name }),
       });
       if (res.ok) {
@@ -294,7 +333,7 @@ document.getElementById('musicCoverInput').addEventListener('change', function(e
     try {
       const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
         body: JSON.stringify({ file: base64, name: file.name }),
       });
       if (res.ok) {
@@ -519,15 +558,29 @@ function importData(input) {
   reader.readAsText(file);
   input.value = '';
 }
-function login() {
+async function login() {
   const pw = document.getElementById('passwordInput').value.trim();
   if (!pw) { showToast('请输入密码', 'error'); return; }
-  if (pw === PASS) { document.getElementById('loginPage').style.display='none'; document.getElementById('adminPage').style.display='block'; loadAll(); }
-  else { document.getElementById('loginError').style.display='block'; }
+  if (pw !== PASS) { document.getElementById('loginError').style.display='block'; return; }
+  // 服务器端认证
+  try {
+    const token = await loginWithServer(pw);
+    saveToken(token, true);
+  } catch {
+    // 服务器未运行，纯客户端模式
+    clearToken();
+  }
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('adminPage').style.display='block';
+  loadAll();
 }
 function logout() {
-  document.getElementById('loginPage').style.display='flex'; document.getElementById('adminPage').style.display='none';
-  document.getElementById('passwordInput').value=''; document.getElementById('loginError').style.display='none';
+  logoutFromServer().then(() => {
+    document.getElementById('loginPage').style.display='flex';
+    document.getElementById('adminPage').style.display='none';
+    document.getElementById('passwordInput').value='';
+    document.getElementById('loginError').style.display='none';
+  });
 }
 function switchTab(tab) {
   currentTab = tab;
@@ -535,7 +588,97 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(el => el.style.display = el.id === 'tab-'+tab ? 'block' : 'none');
 }
 
-// ===== CRUD 工厂（统一增删改查模式） =====
+// ===== 后台列表搜索分页工具（通用） =====
+const adminList = {
+  _cfgs: {},
+
+  /** 注册一个列表类型 */
+  register(key, cfg) {
+    this._cfgs[key] = {
+      searchFields: cfg.searchFields || [],
+      searchInputId: cfg.searchInputId || key + 'SearchInput',
+      pageInputId: cfg.pageInputId || key + 'Page',
+      pageSize: cfg.pageSize || 10,
+      sortFn: cfg.sortFn || null,
+    };
+  },
+
+  /** 获取过滤后的完整列表 */
+  getFiltered(key, items) {
+    const cfg = this._cfgs[key];
+    const q = (document.getElementById(cfg.searchInputId)?.value || '').trim().toLowerCase();
+    let result = q
+      ? items.filter(item =>
+          cfg.searchFields.some(field => {
+            const val = field(item);
+            return val && val.toLowerCase().includes(q);
+          })
+        )
+      : [...items];
+    if (cfg.sortFn) result.sort(cfg.sortFn);
+    return result;
+  },
+
+  /** 分页切片 */
+  getPage(key, items) {
+    const cfg = this._cfgs[key];
+    const page = parseInt(document.getElementById(cfg.pageInputId)?.value || '1');
+    const totalPages = Math.ceil(items.length / cfg.pageSize) || 1;
+    return { items: items.slice((page - 1) * cfg.pageSize, page * cfg.pageSize), page, totalPages };
+  },
+
+  /** 渲染分页导航（colspan 为表格列数，updates 等卡片式传 'card'） */
+  pageNav(key, page, totalPages, loadFnName, colspan) {
+    if (totalPages <= 1) return '';
+    const nav = `<div class="admin-pagination">
+      <button class="page-btn" onclick="window._adminPagePrev('${key}')" ${page <= 1 ? 'disabled' : ''}>←</button>
+      <span>${page}/${totalPages}</span>
+      <button class="page-btn" onclick="window._adminPageNext('${key}')" ${page >= totalPages ? 'disabled' : ''}>→</button>
+    </div>`;
+    if (colspan === 'card') {
+      return `<div style="margin-top:16px;">${nav}</div>`;
+    }
+    return `<tr class="pagination-row"><td colspan="${colspan}">${nav}</td></tr>`;
+  },
+
+  /** 输入框搜索时重置到第一页 */
+  filter(key, loadFn) {
+    const inp = document.getElementById(this._cfgs[key].pageInputId);
+    if (inp) inp.value = 1;
+    loadFn();
+  },
+};
+
+// 全局翻页函数（给 pageNav 的 onclick 用，运行时才查找对应 CRUD 实例）
+window._adminPagePrev = function (key) {
+  const cfg = adminList._cfgs[key];
+  const inp = document.getElementById(cfg.pageInputId);
+  let p = parseInt(inp?.value || '1');
+  if (p > 1) inp.value = p - 1;
+  window[key]?.load();
+};
+window._adminPageNext = function (key) {
+  const cfg = adminList._cfgs[key];
+  const inp = document.getElementById(cfg.pageInputId);
+  let p = parseInt(inp?.value || '1');
+  inp.value = p + 1;
+  window[key]?.load();
+};
+
+// ===== 注册所有列表配置 =====
+adminList.register('articles', {
+  searchFields: [a => a.title, a => a.summary, a => (a.tags || []).join(' ')],
+  sortFn: (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0),
+});
+adminList.register('updates', {
+  searchFields: [u => u.content ? u.content.replace(/<[^>]+>/g, '') : ''],
+});
+adminList.register('explores', {
+  searchFields: [e => e.title, e => e.description ? e.description.replace(/<[^>]+>/g, '') : '', e => e.category],
+});
+adminList.register('music', {
+  searchFields: [m => m.title, m => m.artist],
+});
 function createCRUD(cfg) {
   let items = [];
   function load() {
@@ -602,29 +745,34 @@ const articles = createCRUD({
   editTitle: '编辑文章', editBtn: '保存修改',
   fields: [
     { id: 'articleTitle', prop: 'title' },
+    { id: 'articleCover', prop: 'cover' },
     { id: 'articleTags', prop: 'tags', get: (a) => (a.tags||[]).join(', ') },
     { id: 'articleSummary', prop: 'summary' },
     { id: 'articleContent', prop: 'content', set: (el, v) => { el.innerHTML = v; } },
   ],
   buildData: () => ({
     title: document.getElementById('articleTitle').value.trim()||'无标题',
+    cover: document.getElementById('articleCover').value.trim(),
     tags: document.getElementById('articleTags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
     summary: document.getElementById('articleSummary').value.trim(),
     content: document.getElementById('articleContent').innerHTML,
   }),
   render: (items) => {
     const tbody = document.getElementById('articlesTableBody');
-    if (!items.length) { tbody.innerHTML = '<tr><td colspan="6" class="table-empty">暂无文章</td></tr>'; return; }
-    // 置顶文章排前面
-    const sorted = [...items].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-    tbody.innerHTML = sorted.map(a => `<tr>
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="7" class="table-empty">暂无文章</td></tr>'; return; }
+    const filtered = adminList.getFiltered('articles', items);
+    const { items: paged, page, totalPages } = adminList.getPage('articles', filtered);
+    tbody.innerHTML = paged.map(a => `<tr>
       <td><input type="checkbox" class="batch-checkbox" data-key="articles" data-id="${a.id}" onchange="toggleSelect(this)"></td>
       <td><strong>${escapeHtml(a.title||'')}</strong>${a.pinned ? ' <span style="color:var(--primary);font-size:12px;">📌 置顶</span>' : ''}</td>
-      <td>${(a.tags||[]).map(t => `<span style="display:inline-block;padding:1px 8px;background:rgba(135,206,235,0.15);border-radius:4px;font-size:12px;margin:1px;">${t}</span>`).join('')}</td>
+      <td>${(a.tags||[]).map(t => `<span style="display:inline-block;padding:1px 8px;background:rgba(135,206,235,0.15);border-radius:4px;font-size:12px;margin:1px;">${escapeHtml(t)}</span>`).join('')}</td>
       <td>${formatDate(a.createdAt)}</td>
+      <td>${a.views || 0}</td>
       <td><button class="btn-sm edit" onclick="articles.edit('${a.id}')">编辑</button><button class="btn-sm del" onclick="articles.remove('${a.id}')">删除</button></td>
       <td><button class="btn-sm ${a.pinned ? 'del' : 'edit'}" onclick="togglePin('${a.id}')">${a.pinned ? '取消置顶' : '📌 置顶'}</button></td>
     </tr>`).join('');
+    // 分页
+    tbody.innerHTML += adminList.pageNav('articles', page, totalPages, 'articles', 7);
   },
 });
 
@@ -643,6 +791,9 @@ function togglePin(id) {
   articles.load();
 }
 
+// ===== 文章搜索与分页（由通用 adminList 接管） =====
+// 搜索时重置到第一页
+
 // ===== 动态 CRUD =====
 const updates = createCRUD({
   key: 'updates',
@@ -656,7 +807,9 @@ const updates = createCRUD({
   render: (items) => {
     const container = document.getElementById('updatesList');
     if (!items.length) { container.innerHTML = '<div class="table-empty">暂无动态</div>'; return; }
-    container.innerHTML = items.map(u => `<div style="background:var(--card-bg);backdrop-filter:blur(20px);border-radius:12px;border:1px solid rgba(255,255,255,0.3);padding:16px;margin-bottom:12px;">
+    const filtered = adminList.getFiltered('updates', items);
+    const { items: paged, page, totalPages } = adminList.getPage('updates', filtered);
+    container.innerHTML = paged.map(u => `<div style="background:var(--card-bg);backdrop-filter:blur(20px);border-radius:12px;border:1px solid rgba(255,255,255,0.3);padding:16px;margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="flex:1;display:flex;align-items:flex-start;gap:8px;">
           <input type="checkbox" class="batch-checkbox" data-key="updates" data-id="${u.id}" onchange="toggleSelect(this)" style="margin-top:4px;">
@@ -664,6 +817,8 @@ const updates = createCRUD({
             <div style="font-size:13px;color:var(--text2);margin-top:6px;">${formatDate(u.createdAt)}</div></div></div>
         <div><button class="btn-sm edit" onclick="updates.edit('${u.id}')">编辑</button><button class="btn-sm del" onclick="updates.remove('${u.id}')">删除</button></div>
       </div></div>`).join('');
+    // 分页
+    container.insertAdjacentHTML('beforeend', adminList.pageNav('updates', page, totalPages, 'updates', 'card'));
   },
 });
 
@@ -692,7 +847,10 @@ const explores = createCRUD({
     const tbody = document.getElementById('exploresTableBody');
     const labels = { website: '🌐 网站', source: '📦 源码', video: '🎬 视频' };
     if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" class="table-empty">暂无项目</td></tr>'; return; }
-    tbody.innerHTML = items.map(e => `<tr><td><input type="checkbox" class="batch-checkbox" data-key="explores" data-id="${e.id}" onchange="toggleSelect(this)"></td><td>${escapeHtml(e.icon||'🔗')} ${escapeHtml(e.title||'')}</td><td>${labels[e.category]||e.category}</td><td><button class="btn-sm edit" onclick="explores.edit('${e.id}')">编辑</button><button class="btn-sm del" onclick="explores.remove('${e.id}')">删除</button></td></tr>`).join('');
+    const filtered = adminList.getFiltered('explores', items);
+    const { items: paged, page, totalPages } = adminList.getPage('explores', filtered);
+    tbody.innerHTML = paged.map(e => `<tr><td><input type="checkbox" class="batch-checkbox" data-key="explores" data-id="${e.id}" onchange="toggleSelect(this)"></td><td>${escapeHtml(e.icon||'🔗')} ${escapeHtml(e.title||'')}</td><td>${labels[e.category]||e.category}</td><td><button class="btn-sm edit" onclick="explores.edit('${e.id}')">编辑</button><button class="btn-sm del" onclick="explores.remove('${e.id}')">删除</button></td></tr>`).join('');
+    tbody.innerHTML += adminList.pageNav('explores', page, totalPages, 'explores', 4);
   },
 });
 
@@ -717,11 +875,14 @@ const music = createCRUD({
   render: (items) => {
     const tbody = document.getElementById('musicTableBody');
     if (!items.length) { tbody.innerHTML = '<tr><td colspan="5" class="table-empty">暂无歌曲</td></tr>'; return; }
-    tbody.innerHTML = items.map(m => {
+    const filtered = adminList.getFiltered('music', items);
+    const { items: paged, page, totalPages } = adminList.getPage('music', filtered);
+    tbody.innerHTML = paged.map(m => {
       const url = m.url || m.externalUrl || '';
       const typeLabel = url.startsWith('data/uploads/') ? '📁 本地文件' : (url ? '🔗 外链' : '❌ 无');
       return `<tr><td><input type="checkbox" class="batch-checkbox" data-key="music" data-id="${m.id}" onchange="toggleSelect(this)"></td><td>🎵 ${escapeHtml(m.title||'未知')}</td><td>${escapeHtml(m.artist||'未知')}</td><td>${typeLabel}</td><td><button class="btn-sm edit" onclick="music.edit('${m.id}')">编辑</button><button class="btn-sm del" onclick="music.remove('${m.id}')">删除</button></td></tr>`;
     }).join('');
+    tbody.innerHTML += adminList.pageNav('music', page, totalPages, 'music', 5);
   },
 });
 

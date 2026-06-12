@@ -75,6 +75,7 @@
 <!-- ===== 文章区 ===== -->
 <section class="section" id="articles">
   <h2 class="section-title fade-up"><span>📝</span> 文章</h2>
+  <div id="articleToolbar"></div>
   <div class="loading-spinner" id="articlesLoading">加载中...</div>
   <div id="articlesContainer"></div>
 </section>
@@ -106,6 +107,12 @@
     <button class="article-detail-close" onclick="closeArticle()">✕</button>
     <div id="articleDetailContent"></div>
   </div>
+</div>
+
+<!-- ===== 灯箱 ===== -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close">✕</span>
+  <img class="lightbox-img" id="lightboxImg" src="" alt="">
 </div>
 
 <script src="public/js/shared.js"></script>

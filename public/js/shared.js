@@ -1,5 +1,6 @@
 (function () {
   const STORE_KEY = 'boke_data';
+  const TOKEN_KEY = 'boke_token';
   const DEFAULT_THEME = {
     bgColor: '#fff5f7',
     primaryColor: '#ffb0c0',
@@ -35,15 +36,17 @@
     localStorage.setItem(STORE_KEY, JSON.stringify(store));
   }
 
-  async function syncToServer(type, data) {
+  async function syncToServer(type, data, token) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
     const res = await fetch(`/api/data/${type}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(data),
     });
 
     if (!res.ok) {
-      throw new Error(`Failed to sync ${type}`);
+      throw new Error(`Failed to sync ${type} (${res.status})`);
     }
   }
 
@@ -89,6 +92,58 @@
     return new Date().toISOString();
   }
 
+  // ===== Token 认证管理 =====
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '';
+  }
+
+  function saveToken(token, persistent) {
+    if (persistent) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      sessionStorage.setItem(TOKEN_KEY, token);
+    }
+  }
+
+  function clearToken() {
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+  }
+
+  async function loginWithServer(password) {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (!res.ok) throw new Error('登录失败');
+    const data = await res.json();
+    return data.token;
+  }
+
+  async function logoutFromServer() {
+    const token = getToken();
+    if (!token) return;
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+    } catch {}
+    clearToken();
+  }
+
+  async function incrementView(type, id) {
+    const token = getToken();
+    if (!token) return;
+    try {
+      await fetch(`/api/data/${type}/${id}/view`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+    } catch {}
+  }
+
   window.Boke = {
     STORE_KEY,
     DEFAULT_THEME,
@@ -105,5 +160,12 @@
     formatDateCached,
     genId,
     now,
+    getToken,
+    saveToken,
+    clearToken,
+    loginWithServer,
+    logoutFromServer,
+    incrementView,
+    TOKEN_KEY,
   };
 })();
