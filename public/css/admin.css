@@ -107,6 +107,14 @@ tr:hover td { background: rgba(255,176,192,0.04); }
 @media (max-width: 768px) { .admin-sidebar { width: 60px; padding: 16px 8px; } .admin-sidebar h2 { font-size: 0; } .admin-sidebar h2::after { content: 'B'; font-size: 20px; } .admin-nav-item { font-size: 0; padding: 10px; text-align: center; } .admin-content { margin-left: 60px; padding: 16px; } .form-row { grid-template-columns: 1fr; } .color-picker-grid { grid-template-columns: 1fr 1fr; } .code-modal-inner { width:95%; max-height:90vh; } }
 .rich-text { line-height:1.7; }
 
+/* ===== 后台搜索框 ===== */
+.admin-search-input {
+  padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.08);
+  font-size: 13px; background: var(--card-bg); width: 180px; outline: none;
+  transition: border-color 0.2s;
+}
+.admin-search-input:focus { border-color: var(--primary); }
+
 /* ===== 后台搜索与分页 ===== */
 .admin-pagination {
   display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px;
@@ -120,5 +128,5 @@ tr:hover td { background: rgba(255,176,192,0.04); }
 .admin-pagination span { font-size: 13px; color: var(--text2); }
 .pagination-row td { padding: 8px 16px; background: rgba(255,255,255,0.2); }
 @media (max-width: 768px) {
-  #articleSearchInput { width: 120px !important; }
+  .admin-search-input { width: 120px !important; }
 }

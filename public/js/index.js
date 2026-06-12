@@ -199,6 +199,7 @@ navItemsAll.forEach(item => {
   });
 });
 
+
 // ===== 首页 - 最新文章（小卡片） =====
 function renderHomeArticles() {
   const col = document.getElementById('homeArticlesCol');
@@ -207,10 +208,11 @@ function renderHomeArticles() {
     return;
   }
   let html = '<h4>📖 最新文章</h4>';
-  articles.slice(0, 3).forEach(a => {
-    html += `<div class="mini-card" onclick="document.getElementById('articles').scrollIntoView({behavior:'smooth'})">
+  articles.slice(0, 5).forEach(a => {
+    html += `<div class="mini-card" onclick="showArticle('${a.id}')">
       <div class="mini-title">${a.title || '无标题'}</div>
-      <div class="mini-meta">${formatDateCached(a.createdAt)} · ${truncate(a.summary, 24)}</div>
+      ${a.summary ? `<div class="mini-content">${escapeHtml(a.summary)}</div>` : ''}
+      <div class="mini-meta">${formatDateCached(a.createdAt)}${a.views ? ` · 👁️ ${a.views}` : ''}</div>
     </div>`;
   });
   col.innerHTML = html;
@@ -224,13 +226,33 @@ function renderHomeUpdates() {
     return;
   }
   let html = '<h4>💬 最新动态</h4>';
-  updates.slice(0, 3).forEach(u => {
+  updates.slice(0, 5).forEach(u => {
+    const textOnly = u.content ? u.content.replace(/<[^>]+>/g, '').trim() : '';
     html += `<div class="mini-card" onclick="document.getElementById('updates').scrollIntoView({behavior:'smooth'})">
-      <div class="mini-title">${truncate(u.content, 30)}</div>
+      <div class="mini-content">${u.content || ''}</div>
       <div class="mini-meta">${formatDateCached(u.createdAt)}</div>
     </div>`;
   });
   col.innerHTML = html;
+}
+
+// ===== 通用分页渲染 =====
+function renderPagination(page, totalPages, onChange) {
+  if (totalPages <= 1) return '';
+  return `<div class="pagination">
+    <button class="page-btn" onclick="${onChange}(${page - 1})" ${page <= 1 ? 'disabled' : ''}>← 上一页</button>
+    <span class="page-info">${page} / ${totalPages}</span>
+    <button class="page-btn" onclick="${onChange}(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>下一页 →</button>
+  </div>`;
+}
+
+function scrollToSection(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ===== 文章过滤工具 =====
+function matchArticle(a, q) {
+  return (a.title||'').toLowerCase().includes(q) || (a.summary||'').toLowerCase().includes(q) || (a.content||'').toLowerCase().includes(q) || (a.tags||[]).some(t => t.toLowerCase().includes(q));
 }
 
 // ===== 文章区 =====
@@ -319,7 +341,7 @@ function renderArticles() {
   if (selectedTag) filtered = filtered.filter(a => a.tags && a.tags.includes(selectedTag));
   if (searchQuery.trim()) {
     const q = searchQuery.trim().toLowerCase();
-    filtered = filtered.filter(a => (a.title||'').toLowerCase().includes(q) || (a.summary||'').toLowerCase().includes(q) || (a.content||'').toLowerCase().includes(q) || (a.tags||[]).some(t => t.toLowerCase().includes(q)));
+    filtered = filtered.filter(a => matchArticle(a, q));
   }
 
   if (!filtered.length) {
@@ -373,13 +395,7 @@ function renderArticles() {
     html += '</div>';
 
     // 分页按钮
-    if (totalPages > 1) {
-      html += '<div class="pagination">';
-      html += `<button class="page-btn" onclick="changeArticlesPage(${articlesPage - 1})" ${articlesPage <= 1 ? 'disabled' : ''}>← 上一页</button>`;
-      html += `<span class="page-info">${articlesPage} / ${totalPages}</span>`;
-      html += `<button class="page-btn" onclick="changeArticlesPage(${articlesPage + 1})" ${articlesPage >= totalPages ? 'disabled' : ''}>下一页 →</button>`;
-      html += '</div>';
-    }
+    html += renderPagination(articlesPage, totalPages, 'changeArticlesPage');
   }
   container.innerHTML = html;
   initFadeUp();
@@ -388,7 +404,7 @@ function renderArticles() {
 function changeArticlesPage(page) {
   articlesPage = page;
   renderArticles();
-  document.getElementById('articles').scrollIntoView({ behavior: 'smooth' });
+  scrollToSection('articles');
 }
 
 // ===== 动态区 =====
@@ -415,13 +431,7 @@ function renderUpdates() {
   </div>`).join('');
 
   // 分页按钮
-  if (totalPages > 1) {
-    html += '<div class="pagination">';
-    html += `<button class="page-btn" onclick="changeUpdatesPage(${updatesPage - 1})" ${updatesPage <= 1 ? 'disabled' : ''}>← 上一页</button>`;
-    html += `<span class="page-info">${updatesPage} / ${totalPages}</span>`;
-    html += `<button class="page-btn" onclick="changeUpdatesPage(${updatesPage + 1})" ${updatesPage >= totalPages ? 'disabled' : ''}>下一页 →</button>`;
-    html += '</div>';
-  }
+  html += renderPagination(updatesPage, totalPages, 'changeUpdatesPage');
 
   container.innerHTML = html;
   initFadeUp();
@@ -430,7 +440,7 @@ function renderUpdates() {
 function changeUpdatesPage(page) {
   updatesPage = page;
   renderUpdates();
-  document.getElementById('updates').scrollIntoView({ behavior: 'smooth' });
+  scrollToSection('updates');
 }
 
 // ===== 探索区 =====
@@ -593,6 +603,78 @@ document.addEventListener('click', (e) => {
   const img = e.target.closest('.update-content img, .article-detail-card .prose img');
   if (img && !e.target.closest('.copy-btn, .lightbox')) {
     openLightbox(img.src);
+  }
+});
+
+// ===== 全局 Toast（首页用） =====
+function showToast(msg, type) {
+  const t = document.getElementById('homeToast') || (() => {
+    const el = document.createElement('div');
+    el.id = 'homeToast';
+    el.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 24px;border-radius:12px;background:var(--card-bg);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,0.12);font-size:14px;border:1px solid rgba(255,255,255,0.3);transition:opacity 0.3s;';
+    document.body.appendChild(el);
+    return el;
+  })();
+  t.textContent = msg;
+  t.style.display = 'block';
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 300); }, 2500);
+}
+
+// ===== 全局搜索 =====
+function doGlobalSearch() {
+  const q = document.getElementById('globalSearchInput')?.value.trim().toLowerCase();
+  if (!q) { clearSearchHighlight(); return; }
+
+  const articleMatches = articles.filter(a => matchArticle(a, q));
+  const updateMatches = updates.filter(u =>
+    (u.content||'').replace(/<[^>]+>/g,'').toLowerCase().includes(q)
+  );
+  const exploreMatches = explores.filter(e =>
+    (e.title||'').toLowerCase().includes(q) ||
+    (e.description||'').replace(/<[^>]+>/g,'').toLowerCase().includes(q)
+  );
+
+  if (articleMatches.length) {
+    selectedTag = null;
+    searchQuery = q;
+    renderArticles();
+    renderArticleToolbar();
+    setTimeout(() => scrollToSection('articles'), 100);
+  } else if (updateMatches.length) {
+    setTimeout(() => scrollToSection('updates'), 100);
+  } else if (exploreMatches.length) {
+    setTimeout(() => scrollToSection('explore'), 100);
+  }
+
+  const total = articleMatches.length + updateMatches.length + exploreMatches.length;
+  const parts = [];
+  if (articleMatches.length) parts.push(`文章 ${articleMatches.length} 条`);
+  if (updateMatches.length) parts.push(`动态 ${updateMatches.length} 条`);
+  if (exploreMatches.length) parts.push(`探索 ${exploreMatches.length} 条`);
+  showToast(total > 0 ? `"${q}" — 找到 ${parts.join('，')}` : '未找到相关内容');
+}
+
+function clearSearchHighlight() {
+  searchQuery = '';
+  renderArticles();
+  renderArticleToolbar();
+}
+
+// 搜索按钮/回车
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('globalSearchBtn');
+  const inp = document.getElementById('globalSearchInput');
+  if (btn) btn.addEventListener('click', doGlobalSearch);
+  if (inp) {
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doGlobalSearch();
+    });
+    // 清空时恢复
+    inp.addEventListener('input', function() {
+      if (!this.value.trim()) clearSearchHighlight();
+    });
   }
 });
 

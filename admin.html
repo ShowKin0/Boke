@@ -105,7 +105,7 @@
       <div class="table-wrap" id="articlesTableWrap"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);flex-wrap:wrap;gap:8px;">
   <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('articles')"> 全选</label>
   <div style="display:flex;align-items:center;gap:8px;">
-    <input id="articleSearchInput" placeholder="搜索文章..." oninput="adminList.filter('articles', ()=>articles.load())" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:13px;background:var(--card-bg);width:180px;">
+    <input id="articleSearchInput" placeholder="搜索文章..." oninput="adminList.filter('articles', ()=>articles.load())" class="admin-search-input">
     <button class="btn-sm del" onclick="batchDelete('articles')">🗑 批量删除</button>
   </div>
   <input type="hidden" id="articlePage" value="1">
@@ -128,7 +128,7 @@
       <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('updates')"> 全选</label>
         <div style="display:flex;align-items:center;gap:8px;">
-          <input id="updateSearchInput" placeholder="搜索动态..." oninput="adminList.filter('updates', ()=>updates.load())" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:13px;background:var(--card-bg);width:180px;">
+          <input id="updateSearchInput" placeholder="搜索动态..." oninput="adminList.filter('updates', ()=>updates.load())" class="admin-search-input">
           <button class="btn-sm del" onclick="batchDelete('updates')">🗑 批量删除</button>
         </div>
         <input type="hidden" id="updatePage" value="1">
@@ -161,7 +161,7 @@
       <div class="table-wrap"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);">
   <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('explores')"> 全选</label>
   <div style="display:flex;align-items:center;gap:8px;">
-    <input id="exploreSearchInput" placeholder="搜索探索..." oninput="adminList.filter('explores', ()=>explores.load())" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:13px;background:var(--card-bg);width:160px;">
+    <input id="exploreSearchInput" placeholder="搜索探索..." oninput="adminList.filter('explores', ()=>explores.load())" class="admin-search-input">
     <button class="btn-sm del" onclick="batchDelete('explores')">🗑 批量删除</button>
   </div>
   <input type="hidden" id="explorePage" value="1">
@@ -204,7 +204,7 @@
       <div class="table-wrap"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);">
   <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" onchange="toggleSelectAll('music')"> 全选</label>
   <div style="display:flex;align-items:center;gap:8px;">
-    <input id="musicSearchInput" placeholder="搜索歌曲..." oninput="adminList.filter('music', ()=>music.load())" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:13px;background:var(--card-bg);width:160px;">
+    <input id="musicSearchInput" placeholder="搜索歌曲..." oninput="adminList.filter('music', ()=>music.load())" class="admin-search-input">
     <button class="btn-sm del" onclick="batchDelete('music')">🗑 批量删除</button>
   </div>
   <input type="hidden" id="musicPage" value="1">

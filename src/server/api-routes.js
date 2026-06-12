@@ -19,7 +19,8 @@ function requireAuth(req) {
 
 function getSiteUrl(req) {
   const host = req.headers['host'] || 'localhost:3000';
-  return `http://${host}`;
+  const proto = req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http');
+  return `${proto}://${host}`;
 }
 
 async function handleApi(req, res) {

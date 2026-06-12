@@ -30,42 +30,56 @@
 
 <!-- ===== 首页 ===== -->
 <section class="section" id="home">
-  <div class="hero fade-up">
-    <div class="clock-frame" id="clockFrame">
-      <div class="clock-time" id="clockTime">00:00:00</div>
-      <div class="clock-date" id="clockDate">2026年1月1日 星期一</div>
-    </div>
-  </div>
-
-  <div class="player-widget fade-up" id="playerWidget">
-    <div class="player-header">
-      <div class="player-cover" id="playerCover">🎵</div>
-      <div class="player-info">
-        <div class="song-title" id="songTitle">未播放</div>
-        <div class="song-artist" id="songArtist">点击播放音乐</div>
-      </div>
-      <div class="player-controls">
-        <button class="player-btn small" id="prevBtn">⏮</button>
-        <button class="player-btn" id="playBtn">▶</button>
-        <button class="player-btn small" id="nextBtn">⏭</button>
-        <div class="player-progress" id="progressWrap">
-          <div class="player-progress-bar" id="progressBar"></div>
-        </div>
-        <span class="player-time" id="timeDisplay">0:00</span>
-        <button class="player-btn small" id="listToggleBtn">📋</button>
-      </div>
-    </div>
-    <div class="player-playlist" id="playlist">
-      <div class="loading-spinner">加载中...</div>
-    </div>
-  </div>
-
-  <div class="home-side-cards fade-up" id="homeSideCards">
-    <div class="side-column" id="homeArticlesCol">
+  <div class="home-three-col">
+    <!-- 左栏：最新文章 -->
+    <div class="home-col home-col-left fade-up" id="homeArticlesCol">
       <h4>📖 最新文章</h4>
       <div class="loading-spinner" style="padding:20px;">加载中...</div>
     </div>
-    <div class="side-column" id="homeUpdatesCol">
+
+    <!-- 中栏：搜索 + 时钟 + 音乐 -->
+    <div class="home-col home-col-center fade-up">
+      <!-- 搜索 -->
+      <div class="home-search" id="homeSearch">
+        <input type="text" id="globalSearchInput" placeholder="搜索文章、动态..." autocomplete="off">
+        <button id="globalSearchBtn">🔍</button>
+      </div>
+
+      <!-- 时钟 -->
+      <div class="hero">
+        <div class="clock-frame" id="clockFrame">
+          <div class="clock-time" id="clockTime">00:00:00</div>
+          <div class="clock-date" id="clockDate">2026年1月1日 星期一</div>
+        </div>
+      </div>
+
+      <!-- 音乐 -->
+      <div class="player-widget" id="playerWidget">
+        <div class="player-header">
+          <div class="player-cover" id="playerCover">🎵</div>
+          <div class="player-info">
+            <div class="song-title" id="songTitle">未播放</div>
+            <div class="song-artist" id="songArtist">点击播放音乐</div>
+          </div>
+          <div class="player-controls">
+            <button class="player-btn small" id="prevBtn">⏮</button>
+            <button class="player-btn" id="playBtn">▶</button>
+            <button class="player-btn small" id="nextBtn">⏭</button>
+            <div class="player-progress" id="progressWrap">
+              <div class="player-progress-bar" id="progressBar"></div>
+            </div>
+            <span class="player-time" id="timeDisplay">0:00</span>
+            <button class="player-btn small" id="listToggleBtn">📋</button>
+          </div>
+        </div>
+        <div class="player-playlist" id="playlist">
+          <div class="loading-spinner">加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右栏：最新动态 -->
+    <div class="home-col home-col-right fade-up" id="homeUpdatesCol">
       <h4>💬 最新动态</h4>
       <div class="loading-spinner" style="padding:20px;">加载中...</div>
     </div>

@@ -7,10 +7,8 @@ const {
   now,
   syncToServer: syncDataToServer,
   escapeHtml,
-  escapeHtmlCached,
   truncate,
   formatDate,
-  memoize,
   getToken,
   saveToken,
   clearToken,
@@ -224,129 +222,75 @@ function openCodeModal(editor) {
 function closeCodeModal() {
   document.getElementById('codeModal').style.display = 'none';
 }
-// 图片上传 — 通用（使用 activeEditor）
-document.getElementById('imageFileInput').addEventListener('change', function(e) {
-  const file = e.target.files[0];
+// ===== 通用文件上传工具 =====
+function uploadFile(file, maxSize, opts) {
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) {
-    showToast('图片超过 5MB 限制', 'error');
-    this.value = ''; return;
-  }
+  if (file.size > maxSize) { showToast(opts?.sizeMsg || `文件超过 ${maxSize/1024/1024}MB 限制`, 'error'); return; }
   const reader = new FileReader();
-  reader.onload = async function(ev) {
+  reader.onload = async (ev) => {
     const base64 = ev.target.result;
-    const editor = activeEditor || document.getElementById('articleContent');
-    editor.focus();
     try {
       const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
         body: JSON.stringify({ file: base64, name: file.name }),
       });
-      if (res.ok) {
-        const result = await res.json();
-        const img = `<img src="${result.url}" alt="${file.name}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
-        document.execCommand('insertHTML', false, img);
-        showToast('图片已上传到 data/uploads/');
-        return;
-      }
-    } catch { console.warn('图片上传失败，降级为 base64'); }
-    const img = `<img src="${base64}" alt="${file.name}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
-    document.execCommand('insertHTML', false, img);
-    showToast('图片已插入（本地模式）');
+      if (res.ok) { const r = await res.json(); opts?.onOk(r.url); return; }
+    } catch {}
+    opts?.onFail?.(base64);
   };
-  reader.onerror = function() { showToast('图片读取失败', 'error'); };
+  reader.onerror = () => showToast('文件读取失败', 'error');
   reader.readAsDataURL(file);
+}
+
+// 图片上传 — 插入编辑器
+document.getElementById('imageFileInput').addEventListener('change', function(e) {
+  const fileName = e.target.files[0]?.name || '';
+  uploadFile(e.target.files[0], 5 * 1024 * 1024, {
+    sizeMsg: '图片超过 5MB 限制',
+    onOk(url) {
+      const img = `<img src="${url}" alt="${fileName}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
+      (activeEditor || document.getElementById('articleContent')).focus();
+      document.execCommand('insertHTML', false, img);
+      showToast('图片已上传');
+    },
+    onFail(base64) {
+      const img = `<img src="${base64}" alt="${fileName}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
+      (activeEditor || document.getElementById('articleContent')).focus();
+      document.execCommand('insertHTML', false, img);
+      showToast('图片已插入（本地模式）');
+    },
+  });
   this.value = '';
 });
+
 // 文章封面上传
 document.getElementById('coverFileInput').addEventListener('change', function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) {
-    showToast('封面图片超过 5MB 限制', 'error');
-    this.value = ''; return;
-  }
-  const reader = new FileReader();
-  reader.onload = async function(ev) {
-    const base64 = ev.target.result;
-    try {
-      const res = await fetch(`${API_BASE}/api/upload`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-        body: JSON.stringify({ file: base64, name: file.name }),
-      });
-      if (res.ok) {
-        const result = await res.json();
-        document.getElementById('articleCover').value = result.url;
-        showToast('封面已上传');
-        return;
-      }
-    } catch { console.warn('封面上传失败'); }
-    document.getElementById('articleCover').value = base64;
-    showToast('封面已转为 base64');
-  };
-  reader.readAsDataURL(file);
+  uploadFile(e.target.files[0], 5 * 1024 * 1024, {
+    sizeMsg: '封面超过 5MB 限制',
+    onOk(url) { document.getElementById('articleCover').value = url; showToast('封面已上传'); },
+    onFail(base64) { document.getElementById('articleCover').value = base64; showToast('封面已转为 base64'); },
+  });
   this.value = '';
 });
-// 音乐文件上传 — 上传到 data/uploads/ 并填入 URL 输入框
+
+// 音乐文件上传
 document.getElementById('musicFileInput').addEventListener('change', function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.size > 20 * 1024 * 1024) {
-    showToast('音频文件超过 20MB 限制', 'error');
-    this.value = ''; return;
-  }
-  const reader = new FileReader();
-  reader.onload = async function(ev) {
-    const base64 = ev.target.result;
-    try {
-      const res = await fetch(`${API_BASE}/api/upload`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-        body: JSON.stringify({ file: base64, name: file.name }),
-      });
-      if (res.ok) {
-        const result = await res.json();
-        document.getElementById('musicUrl').value = result.url;
-        showToast('音频已上传到 data/uploads/');
-        return;
-      }
-    } catch { console.warn('音频上传失败，降级为 base64'); }
-    document.getElementById('musicUrl').value = base64;
-    showToast('音频已转为 base64（服务器未运行）');
-  };
-  reader.readAsDataURL(file);
+  uploadFile(e.target.files[0], 20 * 1024 * 1024, {
+    sizeMsg: '音频超过 20MB 限制',
+    onOk(url) { document.getElementById('musicUrl').value = url; showToast('音频已上传'); },
+    onFail(base64) { document.getElementById('musicUrl').value = base64; showToast('音频已转为 base64'); },
+  });
   this.value = '';
 });
+
 // 音乐封面图片上传
 document.getElementById('musicCoverInput').addEventListener('change', function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) {
-    showToast('封面图片超过 5MB 限制', 'error');
-    this.value = ''; return;
-  }
-  const reader = new FileReader();
-  reader.onload = async function(ev) {
-    const base64 = ev.target.result;
-    try {
-      const res = await fetch(`${API_BASE}/api/upload`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-        body: JSON.stringify({ file: base64, name: file.name }),
-      });
-      if (res.ok) {
-        const result = await res.json();
-        document.getElementById('musicCover').value = result.url;
-        showCoverPreview(result.url);
-        return;
-      }
-    } catch { console.warn('封面上传失败，降级为 base64'); }
-    document.getElementById('musicCover').value = base64;
-    showCoverPreview(base64);
-  };
-  reader.readAsDataURL(file);
+  uploadFile(e.target.files[0], 5 * 1024 * 1024, {
+    sizeMsg: '封面超过 5MB 限制',
+    onOk(url) { document.getElementById('musicCover').value = url; showCoverPreview(url); showToast('封面上传成功'); },
+    onFail(base64) { document.getElementById('musicCover').value = base64; showCoverPreview(base64); showToast('封面已转为 base64'); },
+  });
   this.value = '';
 });
 function showCoverPreview(url) {
@@ -385,6 +329,8 @@ function _highlightRaw(code, lang) {
     sql: 'ADD|ALL|ALTER|AND|AS|ASC|BETWEEN|BY|CREATE|DELETE|DESC|DISTINCT|DROP|FROM|GROUP|HAVING|IN|INSERT|INTO|IS|JOIN|LEFT|LIKE|LIMIT|NOT|NULL|OR|ORDER|RIGHT|SELECT|SET|TABLE|TOP|TRUNCATE|UNION|UPDATE|VALUES|VIEW|WHERE',
     html: 'html|head|body|div|span|p|a|img|ul|ol|li|table|tr|td|th|form|input|button|select|option|textarea|h1|h2|h3|h4|h5|h6|br|hr|meta|link|script|style|section|nav|header|footer|main|article|aside|figure|figcaption|blockquote|code|pre|em|strong|i|b|u|s|mark|small|sub|sup',
     css: 'color|background|margin|padding|border|font|text|display|position|width|height|top|left|right|bottom|flex|grid|align|justify|transform|transition|animation|overflow|opacity|z-index|box-shadow|filter|backdrop-filter',
+    c: 'auto|break|case|char|const|continue|default|do|double|else|enum|extern|float|for|goto|if|int|long|register|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while',
+    bash: 'if|then|else|elif|fi|for|while|do|done|case|esac|function|return|exit|break|continue|select|until|in|declare|local|export|set|unset|readonly',
   };
   const typeSets = {
     javascript: 'string|number|boolean|null|undefined|void|any|never|unknown|object|symbol|bigint|Array|Promise|Map|Set|Function',
@@ -394,6 +340,8 @@ function _highlightRaw(code, lang) {
     java: 'int|float|double|char|boolean|void|long|short|byte|String|Integer|Float|Double|Boolean|List|Map|Set|ArrayList|HashMap|Object|Class|Thread',
     go: 'int|int8|int16|int32|int64|uint|float32|float64|bool|string|byte|rune|error|map|chan|struct|interface|slice',
     rust: 'i32|i64|u32|u64|f32|f64|bool|char|str|String|Vec|HashMap|Option|Result|Box|Arc|Mutex|dyn|impl',
+    c: 'int|char|float|double|void|long|short|unsigned|signed|size_t|FILE|NULL',
+    bash: 'string|integer',
   };
   const builtinSets = {
     javascript: 'console|Math|JSON|Promise|Symbol|Reflect|Proxy|RegExp|Date|Error|SyntaxError|TypeError|RangeError|ReferenceError|EvalError|URIError|parseInt|parseFloat|setTimeout|setInterval|clearTimeout|clearInterval|fetch|require|module|exports|process|global|Buffer|ArrayBuffer|Int8Array|Uint8Array|Int16Array|Uint16Array|Int32Array|Uint32Array|Float32Array|Float64Array|BigInt|BigInt64Array|BigUint64Array|WeakMap|WeakSet|WeakRef|FinalizationRegistry|Atomics|SharedArrayBuffer',
@@ -403,6 +351,8 @@ function _highlightRaw(code, lang) {
     java: 'System|Math|Arrays|Collections|Objects|StringBuilder|StringBuffer|Pattern|Matcher|Comparator|Comparable|Iterator|Iterable|Scanner|BufferedReader|InputStreamReader|FileReader|FileWriter|BufferedWriter|PrintWriter|FileInputStream|FileOutputStream|ObjectInputStream|ObjectOutputStream|ClassLoader|Runtime|System|Thread|Runnable|Callable|Future|Executor|Executors|ThreadPoolExecutor|ScheduledExecutorService|Optional|Stream|Collectors|Function|Predicate|Consumer|Supplier|BiFunction',
     go: 'fmt|print|println|printf|sprintf|Sprintf|Fprintf|Sprintln|Sprint|append|copy|make|new|close|delete|panic|recover|error|len|cap|complex|real|imag|iota|nil|true|false|iota|string|bool|int|int8|int16|int32|int64|uint|float32|float64|byte|rune|uintptr|complex64|complex128',
     rust: 'println!|print!|format!|write!|writeln!|eprint!|eprintln!|vec!|Some|None|Ok|Err|String|Vec|HashMap|Box|Arc|Mutex|Rc|Cell|RefCell|Result|Option|Iterator|into_iter|iter|map|collect|unwrap|expect|clone|copied|as_ref|as_mut|take|borrow|borrow_mut|try!|panic!|unreachable!|unimplemented!|todo!|dbg!|assert!|assert_eq!|assert_ne!|debug_assert!',
+    c: 'printf|scanf|fprintf|fscanf|sprintf|snprintf|fopen|fclose|fread|fwrite|fseek|ftell|rewind|fgets|fputs|malloc|calloc|realloc|free|memcpy|memset|memmove|strlen|strcmp|strcpy|strcat|strncpy|strncat|strstr|strchr|atoi|atof|exit|NULL|stdin|stdout|stderr|FILE|size_t',
+    bash: 'echo|printf|read|cd|pwd|ls|cat|grep|sed|awk|rm|mv|cp|mkdir|touch|chmod|source|exec|eval|let|test|true|false|type|command|wait|jobs|fg|bg|kill|ulimit|umask|basename|dirname|cut|sort|uniq|wc|head|tail|tee|xargs|find|tar|gzip|gunzip',
   };
   // 先处理注释和字符串（它们在 HTML 标签里，后面的匹配要跳过标签）
   html = html.replace(/(\/\/[^\n]*)/g, '<span class="hl-cmt">$1</span>');
@@ -887,9 +837,8 @@ const music = createCRUD({
 });
 
 // ===== 主题 =====
-const DEFAULT_THEME = { bgColor:'#fff5f7', primaryColor:'#ffb0c0', secondaryColor:'#87ceeb', cardBg:'rgba(255,255,255,0.6)', textColor:'#2d2d2d', textSecondary:'#888888' };
 function loadTheme() {
-  const t = store.theme || DEFAULT_THEME;
+  const t = store.theme || window.Boke.DEFAULT_THEME;
   document.getElementById('themeBg').value = t.bgColor||'#fff5f7';
   document.getElementById('themePrimary').value = t.primaryColor||'#ffb0c0';
   document.getElementById('themeSecondary').value = t.secondaryColor||'#87ceeb';
@@ -909,7 +858,7 @@ document.querySelectorAll('#tab-theme input[type="color"]').forEach(el => el.add
 function hexToRgb(h) { return parseInt(h.slice(1,3),16)+','+parseInt(h.slice(3,5),16)+','+parseInt(h.slice(5,7),16); }
 function getThemeData() { return { bgColor:document.getElementById('themeBg').value, primaryColor:document.getElementById('themePrimary').value, secondaryColor:document.getElementById('themeSecondary').value, cardBg:'rgba('+hexToRgb(document.getElementById('themeCardBg').value)+',0.6)', textColor:document.getElementById('themeText').value, textSecondary:document.getElementById('themeTextSecondary').value }; }
 function saveTheme() { store.theme = getThemeData(); saveStore(store); syncToServer('theme', store.theme); showToast('主题已保存'); }
-function resetTheme() { store.theme = {...DEFAULT_THEME}; saveStore(store); syncToServer('theme', store.theme); loadTheme(); showToast('已重置'); }
+function resetTheme() { store.theme = {...window.Boke.DEFAULT_THEME}; saveStore(store); syncToServer('theme', store.theme); loadTheme(); showToast('已重置'); }
 
 function loadAll() {
   try {
