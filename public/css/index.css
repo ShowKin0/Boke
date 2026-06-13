@@ -19,15 +19,25 @@ body {
   overflow-x: hidden;
 }
 
+/* ===== 毛玻璃基础（共享属性，减少重复） ===== */
+.navbar,
+.mini-card,
+.glass-card,
+.article-featured,
+.update-card,
+.explore-item,
+.article-detail-card {
+  background: var(--card-bg);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
 /* ===== 导航栏（双栏交叉淡入淡出） ===== */
 .navbar {
   position: fixed;
   z-index: 1000;
   display: flex;
-  background: var(--card-bg);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
-  border: 1px solid rgba(255,255,255,0.3);
   user-select: none;
   transition: opacity 0.6s cubic-bezier(0.4,0,0.2,1), transform 0.6s cubic-bezier(0.4,0,0.2,1);
 }
@@ -252,11 +262,7 @@ body {
 
 /* 侧栏中的卡片 */
 .mini-card {
-  background: var(--card-bg);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.3);
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
   padding: 16px;
   margin-bottom: 12px;
@@ -297,11 +303,7 @@ body {
 
 /* ===== 毛玻璃卡片 ===== */
 .glass-card {
-  background: var(--card-bg);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border-radius: var(--radius);
-  border: 1px solid rgba(255,255,255,0.3);
   box-shadow: var(--shadow);
   padding: 24px;
   transition: all 0.4s ease;
@@ -323,11 +325,7 @@ body {
 /* ===== 文章区 杂志式 ===== */
 .article-featured {
   grid-column: 1 / -1;
-  background: var(--card-bg);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border-radius: var(--radius);
-  border: 1px solid rgba(255,255,255,0.3);
   box-shadow: var(--shadow);
   overflow: hidden;
   transition: all 0.4s ease;
@@ -347,11 +345,7 @@ body {
 /* ===== 动态区 社交式 ===== */
 .updates-list { display: flex; flex-direction: column; gap: 20px; }
 .update-card {
-  background: var(--card-bg);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border-radius: var(--radius);
-  border: 1px solid rgba(255,255,255,0.3);
   box-shadow: var(--shadow);
   padding: 24px;
   transition: all 0.4s ease;
@@ -407,11 +401,7 @@ body {
   gap: 16px;
 }
 .explore-item {
-  background: var(--card-bg);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border-radius: var(--radius);
-  border: 1px solid rgba(255,255,255,0.3);
   box-shadow: var(--shadow);
   padding: 20px;
   transition: all 0.4s ease;

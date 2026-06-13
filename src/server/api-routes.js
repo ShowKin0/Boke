@@ -48,7 +48,8 @@ async function handleApi(req, res) {
 
   // 验证 token
   if (req.method === 'GET' && pathname === '/api/verify') {
-    sendJSON(res, 200, { ok: requireAuth(req), authenticated: requireAuth(req) });
+    const authenticated = requireAuth(req);
+    sendJSON(res, 200, { ok: authenticated, authenticated });
     return true;
   }
 

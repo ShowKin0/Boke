@@ -261,64 +261,63 @@ function uploadFile(file, maxSize, opts) {
   reader.readAsDataURL(file);
 }
 
-// 图片上传 — 插入编辑器
-document.getElementById('imageFileInput').addEventListener('change', function(e) {
-  const fileName = e.target.files[0]?.name || '';
-  uploadFile(e.target.files[0], 5 * 1024 * 1024, {
-    sizeMsg: '图片超过 5MB 限制',
-    onOk(url) {
-      const img = `<img src="${url}" alt="${fileName}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
-      (activeEditor || document.getElementById('articleContent')).focus();
-      document.execCommand('insertHTML', false, img);
-      showToast('图片已上传');
-    },
-    onFail(base64) {
-      const img = `<img src="${base64}" alt="${fileName}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
-      (activeEditor || document.getElementById('articleContent')).focus();
-      document.execCommand('insertHTML', false, img);
-      showToast('图片已插入（本地模式）');
-    },
+// 通用文件上传绑定（减少重复的 addEventListener + uploadFile 调用）
+function bindFileUpload(inputId, maxSize, sizeMsg, actions) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  el.addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const name = file.name;
+    uploadFile(file, maxSize, {
+      sizeMsg,
+      onOk(url) { actions.onOk(url, name); showToast(actions.okMsg || '上传成功'); },
+      onFail(base64) {
+        const cb = actions.onFail || actions.onOk;
+        cb(base64, name);
+        showToast(actions.failMsg || '已转为 base64');
+      },
+    });
+    this.value = '';
   });
-  this.value = '';
+}
+
+function setVal(id, val) { document.getElementById(id).value = val; }
+
+// 图片上传 — 插入编辑器
+bindFileUpload('imageFileInput', 5 * 1024 * 1024, '图片超过 5MB 限制', {
+  okMsg: '图片已上传',
+  failMsg: '图片已插入（本地模式）',
+  onOk(url, name) {
+    const img = `<img src="${url}" alt="${name}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
+    (activeEditor || document.getElementById('articleContent')).focus();
+    document.execCommand('insertHTML', false, img);
+  },
 });
 
 // 文章封面上传
-document.getElementById('coverFileInput').addEventListener('change', function(e) {
-  uploadFile(e.target.files[0], 5 * 1024 * 1024, {
-    sizeMsg: '封面超过 5MB 限制',
-    onOk(url) { document.getElementById('articleCover').value = url; showToast('封面已上传'); },
-    onFail(base64) { document.getElementById('articleCover').value = base64; showToast('封面已转为 base64'); },
-  });
-  this.value = '';
+bindFileUpload('coverFileInput', 5 * 1024 * 1024, '封面超过 5MB 限制', {
+  okMsg: '封面已上传', failMsg: '封面已转为 base64',
+  onOk(url) { setVal('articleCover', url); },
 });
 
 // 音乐文件上传
-document.getElementById('musicFileInput').addEventListener('change', function(e) {
-  uploadFile(e.target.files[0], 20 * 1024 * 1024, {
-    sizeMsg: '音频超过 20MB 限制',
-    onOk(url) { document.getElementById('musicUrl').value = url; showToast('音频已上传'); },
-    onFail(base64) { document.getElementById('musicUrl').value = base64; showToast('音频已转为 base64'); },
-  });
-  this.value = '';
+bindFileUpload('musicFileInput', 20 * 1024 * 1024, '音频超过 20MB 限制', {
+  okMsg: '音频已上传', failMsg: '音频已转为 base64',
+  onOk(url) { setVal('musicUrl', url); },
 });
 
-// 音乐封面图片上传
-document.getElementById('musicCoverInput').addEventListener('change', function(e) {
-  uploadFile(e.target.files[0], 5 * 1024 * 1024, {
-    sizeMsg: '封面超过 5MB 限制',
-    onOk(url) { document.getElementById('musicCover').value = url; showCoverPreview(url); showToast('封面上传成功'); },
-    onFail(base64) { document.getElementById('musicCover').value = base64; showCoverPreview(base64); showToast('封面已转为 base64'); },
-  });
-  this.value = '';
+// 音乐封面上传
+bindFileUpload('musicCoverInput', 5 * 1024 * 1024, '封面超过 5MB 限制', {
+  okMsg: '封面上传成功', failMsg: '封面已转为 base64',
+  onOk(url) { setVal('musicCover', url); showCoverPreview(url); },
+  onFail(base64) { setVal('musicCover', base64); showCoverPreview(base64); },
 });
-// 探索图标图片上传
-document.getElementById('exploreIconInput').addEventListener('change', function(e) {
-  uploadFile(e.target.files[0], 2 * 1024 * 1024, {
-    sizeMsg: '图标超过 2MB 限制',
-    onOk(url) { document.getElementById('exploreIcon').value = url; showToast('图标已上传'); },
-    onFail(base64) { document.getElementById('exploreIcon').value = base64; showToast('图标已转为 base64'); },
-  });
-  this.value = '';
+
+// 探索图标上传
+bindFileUpload('exploreIconInput', 2 * 1024 * 1024, '图标超过 2MB 限制', {
+  okMsg: '图标已上传', failMsg: '图标已转为 base64',
+  onOk(url) { setVal('exploreIcon', url); },
 });
 function showCoverPreview(url) {
   const preview = document.getElementById('musicCoverPreview');
