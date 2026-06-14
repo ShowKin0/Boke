@@ -660,18 +660,96 @@ function clearSearchHighlight() {
   renderArticleToolbar();
 }
 
-// 搜索按钮/回车
+// ===== 搜索候选 =====
+function renderSearchSuggestions(q) {
+  const container = document.getElementById('searchSuggestions');
+  const query = q.trim().toLowerCase();
+  if (!query) { container.classList.remove('open'); return; }
+
+  const results = [];
+  const MAX = 8;
+
+  for (const a of articles) {
+    if (results.length >= MAX) break;
+    if (matchArticle(a, query)) results.push({ type:'article', id:a.id, label:a.title||'无标题' });
+  }
+  for (const u of updates) {
+    if (results.length >= MAX) break;
+    const text = (u.content||'').replace(/<[^>]+>/g, '');
+    if (text.toLowerCase().includes(query)) results.push({ type:'update', id:u.id, label:truncate(text, 50) });
+  }
+  for (const e of explores) {
+    if (results.length >= MAX) break;
+    if ((e.title||'').toLowerCase().includes(query) || (e.description||'').toLowerCase().includes(query))
+      results.push({ type:'explore', id:e.url, label:e.title||'无标题' });
+  }
+
+  if (!results.length) { container.classList.remove('open'); return; }
+
+  const ICONS = { article:'📝', update:'💬', explore:'🔍' };
+  const LABELS = { article:'文章', update:'动态', explore:'探索' };
+  container.innerHTML = results.map((r, i) =>
+    `<div class="suggestion-item${i===0?' highlight':''}" data-type="${r.type}" data-id="${escapeHtml(r.id)}" data-index="${i}">
+      <span class="suggestion-icon">${ICONS[r.type]}</span>
+      <span class="suggestion-text">${escapeHtml(r.label)}</span>
+      <span class="suggestion-badge">${LABELS[r.type]}</span>
+    </div>`
+  ).join('');
+  container.classList.add('open');
+}
+
+function selectSuggestion(el) {
+  const type = el.dataset.type;
+  const id = el.dataset.id;
+  document.getElementById('searchSuggestions').classList.remove('open');
+  document.getElementById('globalSearchInput').value = el.querySelector('.suggestion-text').textContent;
+
+  if (type === 'article') {
+    showArticle(id);
+  } else if (type === 'update') {
+    document.getElementById('updates').scrollIntoView({ behavior:'smooth' });
+  } else if (type === 'explore') {
+    document.getElementById('explore').scrollIntoView({ behavior:'smooth' });
+  }
+}
+
+// 委派建议项点击（mousedown 优先于 blur 触发）
+document.addEventListener('mousedown', (e) => {
+  const item = e.target.closest('.suggestion-item');
+  if (item) selectSuggestion(item);
+});
+
+// 搜索按钮/回车 + 候选
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('globalSearchBtn');
   const inp = document.getElementById('globalSearchInput');
   if (btn) btn.addEventListener('click', doGlobalSearch);
   if (inp) {
     inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') doGlobalSearch();
+      const container = document.getElementById('searchSuggestions');
+      if (container.classList.contains('open')) {
+        const items = container.querySelectorAll('.suggestion-item');
+        const cur = container.querySelector('.highlight');
+        let idx = cur ? parseInt(cur.dataset.index) : -1;
+        if (e.key === 'ArrowDown') { e.preventDefault(); idx = Math.min(idx+1, items.length-1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); idx = Math.max(idx-1, 0); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (cur) selectSuggestion(cur); return; }
+        else if (e.key === 'Escape') { container.classList.remove('open'); return; }
+        else return;
+        items.forEach(el => el.classList.remove('highlight'));
+        items[idx]?.classList.add('highlight');
+        items[idx]?.scrollIntoView({ block:'nearest' });
+      } else if (e.key === 'Enter') {
+        doGlobalSearch();
+      }
     });
-    // 清空时恢复
     inp.addEventListener('input', function() {
       if (!this.value.trim()) clearSearchHighlight();
+      renderSearchSuggestions(this.value);
+    });
+    // 点击外部关闭
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#homeSearch')) document.getElementById('searchSuggestions')?.classList.remove('open');
     });
   }
 });
