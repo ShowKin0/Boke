@@ -1,0 +1,90 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - button "🏠 首页" [ref=e3] [cursor=pointer]
+    - button "📝 文章" [ref=e4] [cursor=pointer]
+    - button "💬 动态" [ref=e5] [cursor=pointer]
+    - button "🔍 探索" [ref=e6] [cursor=pointer]
+    - link "⚙️" [ref=e7] [cursor=pointer]:
+      - /url: admin.html
+  - navigation:
+    - button "🏠"
+    - button "📝"
+    - button "💬"
+    - button "🔍"
+    - link "⚙️":
+      - /url: admin.html
+  - generic [ref=e10]:
+    - generic [ref=e11]:
+      - heading "📖 最新文章" [level=4] [ref=e12]
+      - generic [ref=e13] [cursor=pointer]:
+        - generic [ref=e14]: "2"
+        - generic [ref=e15]: 2026/6/14
+      - generic [ref=e16] [cursor=pointer]:
+        - generic [ref=e17]: "1"
+        - generic [ref=e18]: 2026/6/14
+    - generic [ref=e19]:
+      - generic [ref=e20]:
+        - textbox "搜索文章、动态..." [ref=e21]
+        - button "🔍" [ref=e22] [cursor=pointer]
+      - generic [ref=e24]:
+        - generic [ref=e25]: 15:16:07
+        - generic [ref=e26]: 2026年6月15日 星期一
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]: 🎵
+          - generic:
+            - generic: 未播放
+            - generic: 点击播放音乐
+          - generic [ref=e30]:
+            - button "⏮" [ref=e31] [cursor=pointer]
+            - button "▶" [ref=e32] [cursor=pointer]
+            - button "⏭" [ref=e33] [cursor=pointer]
+            - generic [ref=e35]: 0:00
+            - button "📋" [ref=e36] [cursor=pointer]
+            - button "➡️" [ref=e37] [cursor=pointer]
+        - generic [ref=e38] [cursor=pointer]:
+          - generic [ref=e39]: 🎵
+          - generic [ref=e40]: fs - fdsf
+    - generic [ref=e41]:
+      - heading "💬 最新动态" [level=4] [ref=e42]
+      - generic [ref=e43] [cursor=pointer]:
+        - generic [ref=e44]: "1"
+        - generic [ref=e45]: 2026/6/14
+  - generic [ref=e46]:
+    - heading "📝 文章" [level=2] [ref=e47]
+    - generic [ref=e48]:
+      - generic [ref=e50] [cursor=pointer]:
+        - heading "2" [level=2] [ref=e51]
+        - paragraph [ref=e52]: 暂无摘要
+        - generic [ref=e53]: 2026/6/14
+      - generic [ref=e56] [cursor=pointer]:
+        - heading "1" [level=3] [ref=e57]
+        - generic [ref=e58]: 2026/6/14
+  - generic [ref=e59]:
+    - heading "💬 动态" [level=2] [ref=e60]
+    - generic [ref=e62]:
+      - generic [ref=e63]:
+        - generic [ref=e64]: 👤
+        - generic [ref=e65]:
+          - generic [ref=e66]: 站主
+          - generic [ref=e67]: 2026/6/14 16:53:08
+      - generic [ref=e68]: "1"
+  - generic [ref=e69]:
+    - heading "🔍 探索" [level=2] [ref=e70]
+    - generic [ref=e71]:
+      - button "📝 博客推荐" [ref=e72] [cursor=pointer]
+      - button "🌐 网站推荐" [ref=e73] [cursor=pointer]
+      - button "📦 源码" [ref=e74] [cursor=pointer]
+      - button "🎬 学习视频" [ref=e75] [cursor=pointer]
+    - generic [ref=e76]:
+      - link "🔗 1 📝 博客推荐" [ref=e77] [cursor=pointer]:
+        - /url: "#"
+        - generic [ref=e78]: 🔗
+        - heading "1" [level=4] [ref=e79]
+        - paragraph
+        - generic [ref=e80]: 📝 博客推荐
+      - link "maoshiking 擅长web制作，熟练运用AI 📝 博客推荐" [ref=e81] [cursor=pointer]:
+        - /url: https://github.com/maoshiking
+        - heading "maoshiking" [level=4] [ref=e82]
+        - paragraph [ref=e83]: 擅长web制作，熟练运用AI
+        - generic [ref=e84]: 📝 博客推荐

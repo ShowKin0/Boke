@@ -289,6 +289,12 @@ body {
 }
 .player-btn:hover { transform: scale(1.1); }
 .player-btn.small { width: 26px; height: 26px; font-size: 11px; background: rgba(255,176,192,0.3); color: var(--text); }
+.player-btn.mode-btn { border-radius: 50%; background: var(--card-bg); border: 2px solid rgba(0,0,0,0.08); font-size: 11px; transition: all 0.25s; vertical-align: middle; }
+.player-btn.mode-btn:hover { transform: scale(1.12); }
+.player-btn.mode-sequential { border-color: #87ceeb; color: #87ceeb; background: rgba(135,206,235,0.12); }
+.player-btn.mode-shuffle { border-color: #b088d9; color: #b088d9; background: rgba(176,136,217,0.12); }
+.player-btn.mode-loop { border-color: #6bcf7a; color: #6bcf7a; background: rgba(107,207,122,0.12); }
+.player-btn.mode-loop-one { border-color: #6bcf7a; color: #6bcf7a; background: rgba(107,207,122,0.12); box-shadow: 0 0 0 2px rgba(107,207,122,0.3); }
 .player-progress {
   flex: 1; height: 4px; background: rgba(0,0,0,0.08);
   border-radius: 2px; cursor: pointer; position: relative; min-width: 50px;

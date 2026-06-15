@@ -755,6 +755,31 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ===== 音乐播放器 =====
+const PLAY_MODES = ['sequential', 'shuffle', 'loop'];
+const MODE_CONFIG = {
+  sequential: { icon: '➡️', label: '顺序播放', cls: 'mode-sequential' },
+  shuffle:    { icon: '🔀', label: '随机播放', cls: 'mode-shuffle' },
+  loop:       { icon: '🔁', label: '列表循环', cls: 'mode-loop' },
+};
+let playMode = 'sequential';
+
+function getModeBtn() { return document.getElementById('modeBtn'); }
+
+function updateModeUI() {
+  const btn = getModeBtn();
+  if (!btn) return;
+  const cfg = MODE_CONFIG[playMode];
+  btn.textContent = cfg.icon;
+  btn.title = cfg.label;
+  btn.className = `player-btn small mode-btn ${cfg.cls}`;
+}
+
+function cyclePlayMode() {
+  const idx = PLAY_MODES.indexOf(playMode);
+  playMode = PLAY_MODES[(idx + 1) % PLAY_MODES.length];
+  updateModeUI();
+  showToast(`播放模式：${MODE_CONFIG[playMode].label}`, 'info');
+}
 function renderPlaylist() {
   const playlist = document.getElementById('playlist');
   if (!musicList.length) {
@@ -809,6 +834,7 @@ document.getElementById('nextBtn').addEventListener('click', () => {
 document.getElementById('listToggleBtn').addEventListener('click', () => {
   document.getElementById('playlist').classList.toggle('open');
 });
+document.getElementById('modeBtn').addEventListener('click', cyclePlayMode);
 
 // 进度条
 document.getElementById('progressWrap').addEventListener('click', (e) => {
@@ -820,9 +846,29 @@ document.getElementById('progressWrap').addEventListener('click', (e) => {
 
 audio.addEventListener('timeupdate', updateProgress);
 audio.addEventListener('ended', () => {
-  if (musicList.length) {
+  if (!musicList.length) return;
+  if (playMode === 'loop') {
+    // 列表循环：播下一首
     currentSongIndex = (currentSongIndex + 1) % musicList.length;
     playSong(currentSongIndex);
+  } else if (playMode === 'shuffle') {
+    // 随机播放：从列表中随机选一首（不重样，除非只剩一首）
+    if (musicList.length > 1) {
+      let next;
+      do { next = Math.floor(Math.random() * musicList.length); }
+      while (next === currentSongIndex);
+      currentSongIndex = next;
+    }
+    playSong(currentSongIndex);
+  } else {
+    // 顺序播放：播下一首（到底停止）
+    if (currentSongIndex < musicList.length - 1) {
+      currentSongIndex++;
+      playSong(currentSongIndex);
+    } else {
+      isPlaying = false;
+      updatePlayerUI();
+    }
   }
 });
 
@@ -869,3 +915,4 @@ document.getElementById('exploreTabs').addEventListener('click', (e) => {
 
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', loadAll);
+document.addEventListener('DOMContentLoaded', () => { updateModeUI(); });
