@@ -170,9 +170,7 @@ function handleRSS(req, res) {
   </channel>
 </rss>`;
 
-  res.writeHead(200, { 'Content-Type': 'application/rss+xml; charset=utf-8' });
-  res.end(xml);
-  return true;
+  writeXML(res, xml);
 }
 
 function handleSitemap(req, res) {
@@ -192,9 +190,12 @@ function handleSitemap(req, res) {
   ${urls}
 </urlset>`;
 
+  writeXML(res, xml);
+}
+
+function writeXML(res, xml) {
   res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
   res.end(xml);
-  return true;
 }
 
 module.exports = { handleApi };

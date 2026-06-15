@@ -68,9 +68,6 @@
     };
   }
 
-  // 缓存版本的 escapeHtml（适合重复调用相同字符串的场景）
-  const escapeHtmlCached = memoize(escapeHtml);
-
   // 受控截断：超过 maxLen 自动加 …
   function truncate(str, maxLen) {
     if (!str) return str ?? '';
@@ -153,7 +150,6 @@
     saveStore,
     syncToServer,
     escapeHtml,
-    escapeHtmlCached,
     truncate,
     memoize,
     formatDate,

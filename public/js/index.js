@@ -914,5 +914,4 @@ document.getElementById('exploreTabs').addEventListener('click', (e) => {
 });
 
 // ===== 初始化 =====
-document.addEventListener('DOMContentLoaded', loadAll);
-document.addEventListener('DOMContentLoaded', () => { updateModeUI(); });
+document.addEventListener('DOMContentLoaded', () => { loadAll(); updateModeUI(); });

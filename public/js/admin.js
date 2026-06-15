@@ -16,8 +16,6 @@ const {
   logoutFromServer,
 } = window.Boke;
 
-const API_BASE = '';
-
 // ===== 服务器同步 =====
 async function syncToServer(type, data) {
   try {
@@ -248,7 +246,7 @@ function uploadFile(file, maxSize, opts) {
   reader.onload = async (ev) => {
     const base64 = ev.target.result;
     try {
-      const res = await fetch(`${API_BASE}/api/upload`, {
+      const res = await fetch('/api/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
         body: JSON.stringify({ file: base64, name: file.name }),
@@ -789,7 +787,7 @@ const updates = createCRUD({
         <div style="flex:1;display:flex;align-items:flex-start;gap:8px;">
           <input type="checkbox" class="batch-checkbox" data-key="updates" data-id="${u.id}" onchange="toggleSelect(this)" style="margin-top:4px;">
           <div><div class="rich-text prose">${u.content||'(无内容)'}</div>
-            <div style="font-size:13px;color:var(--text2);margin-top:6px;">${formatDate(u.createdAt)}</div></div></div>
+            <div style="font-size:13px;color:var(--text-secondary);margin-top:6px;">${formatDate(u.createdAt)}</div></div></div>
         <div><button class="btn-sm edit" onclick="updates.edit('${u.id}')">编辑</button><button class="btn-sm del" onclick="updates.remove('${u.id}')">删除</button></div>
       </div></div>`).join('');
     // 分页
