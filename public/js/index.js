@@ -162,6 +162,11 @@ function updateActiveSection() {
   // 同时更新两个指示器
   updateIndicator(active, topNav, indicatorTop, true);
   updateIndicator(active, leftNav, indicatorLeft, false);
+
+  // 更新底部导航
+  document.querySelectorAll('.bottom-nav-item[data-section]').forEach(item => {
+    item.classList.toggle('active', item.dataset.section === active);
+  });
 }
 
 function updateIndicator(active, navEl, indEl, isTop) {
@@ -195,6 +200,16 @@ navItemsAll.forEach(item => {
   item.addEventListener('click', () => {
     const section = item.dataset.section;
     document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+// 底部导航栏点击
+document.querySelectorAll('.bottom-nav-item[data-section]').forEach(item => {
+  item.addEventListener('click', () => {
+    const section = item.dataset.section;
+    document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
+    document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+    item.classList.add('active');
   });
 });
 
@@ -913,5 +928,60 @@ document.getElementById('exploreTabs').addEventListener('click', (e) => {
   renderExplores(currentCategory);
 });
 
+// ===== 鼠标跟随视差（中栏元素轻微位移） =====
+function initParallax() {
+  const homeSec = document.getElementById('home');
+  const els = homeSec?.querySelectorAll('.clock-frame, .player-widget, .home-search');
+  if (!els?.length) return;
+  let rafId = null;
+  homeSec.addEventListener('mousemove', (e) => {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(() => {
+      const rect = homeSec.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      els.forEach((el, i) => {
+        const factor = 6 + i * 3;
+        el.style.transform = `translate(${x * factor}px, ${y * factor}px)`;
+      });
+    });
+  });
+  homeSec.addEventListener('mouseleave', () => {
+    els.forEach(el => { el.style.transform = ''; });
+  });
+}
+
+// ===== 暗黑模式切换 =====
+function initTheme() {
+  const toggles = ['themeToggleTop', 'themeToggleLeft']
+    .map(id => document.getElementById(id))
+    .filter(Boolean);
+  if (!toggles.length) return;
+
+  function setTheme(isDark) {
+    if (isDark) {
+      document.documentElement.dataset.theme = 'dark';
+      document.body.classList.add('dark-mode');
+      toggles.forEach(b => { b.textContent = '☀️'; });
+    } else {
+      delete document.documentElement.dataset.theme;
+      document.body.classList.remove('dark-mode');
+      toggles.forEach(b => { b.textContent = '🌙'; });
+    }
+    localStorage.setItem('boke_theme', isDark ? 'dark' : 'light');
+  }
+
+  if (localStorage.getItem('boke_theme') === 'dark') setTheme(true);
+  toggles.forEach(b => {
+    b.addEventListener('click', () => setTheme(document.documentElement.dataset.theme !== 'dark'));
+  });
+  // 底部导航暗黑按钮
+  const bottomToggle = document.getElementById('themeToggleBottom');
+  if (bottomToggle) {
+    if (localStorage.getItem('boke_theme') === 'dark') bottomToggle.textContent = '☀️';
+    bottomToggle.addEventListener('click', () => setTheme(document.documentElement.dataset.theme !== 'dark'));
+  }
+}
+
 // ===== 初始化 =====
-document.addEventListener('DOMContentLoaded', () => { loadAll(); updateModeUI(); });
+document.addEventListener('DOMContentLoaded', () => { loadAll(); updateModeUI(); initTheme(); initParallax(); });
