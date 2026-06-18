@@ -130,7 +130,9 @@ body {
 #home {
   min-height: 100vh;
   padding: 10px 40px;
-  max-width: 1400px; margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   display: flex; align-items: stretch;
   position: relative;
   overflow: hidden;
@@ -170,6 +172,8 @@ body {
   display: flex;
   gap: 24px;
   width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   align-items: stretch;
   position: relative;
   z-index: 1;
@@ -196,7 +200,6 @@ body {
   display: flex; align-items: center; gap: 6px;
   position: sticky; top: 0; z-index: 1;
   padding: 12px 0 8px;
-  background: var(--bg);
 }
 
 /* 中栏 — 顶部对齐，垂直排列 */
