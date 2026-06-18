@@ -635,6 +635,7 @@ body.dark-mode .skeleton {
 }
 .bottom-nav-item span { font-size: 10px; line-height: 1; }
 .bottom-nav-item.active { color: var(--primary); }
+.bottom-nav-item[href]:hover { color: var(--primary); }
 
 /* ===== 加载/空状态 ===== */
 .loading-spinner {
@@ -653,7 +654,7 @@ body.dark-mode .skeleton {
 @media (max-width: 900px) {
   .home-three-col { flex-direction: column; align-items: center; }
   .home-col-left,
-  .home-col-right { flex: none; width: 100%; max-width: 500px; max-height: none; overflow-y: visible; }
+  .home-col-right { flex: none; width: 100%; max-width: 500px; max-height: none; overflow-y: visible; padding-top: 10px; }
   .home-col-left h4,
   .home-col-right h4 { position: static; }
 }
@@ -662,19 +663,65 @@ body.dark-mode .skeleton {
   .navbar.top-nav { display: none; } /* 隐藏顶部导航 */
   .navbar.left-nav { display: none; } /* 隐藏左侧导航 */
   .bottom-nav { display: flex; } /* 显示底部导航 */
+  .bottom-nav-item { padding: 4px 16px; min-width: 48px; } /* 增大触摸区域 */
   .nav-item { padding: 8px 12px; font-size: 13px; }
+  .section-title { font-size: 22px; margin-bottom: 20px; }
   .clock-frame { padding: 20px 24px; }
   .clock-frame .clock-time { font-size: 36px; letter-spacing: 2px; }
   #home { padding: 16px; align-items: center; }
-  .home-three-col { transform: translateY(-12%); }
-  .home-search { max-width: 100%; }
-  .player-widget { max-width: 100%; }
+  .home-three-col { transform: translateY(-5%); gap: 12px; }
+  .home-search { max-width: 300px; }
+  /* 音乐播放器缩小 */
+  .player-widget { max-width: 100%; padding: 12px 14px; }
+  .player-cover { width: 36px; height: 36px; font-size: 16px; }
+  .player-header { gap: 8px; margin-bottom: 8px; }
+  .player-info .song-title { font-size: 13px; }
+  .player-info .song-artist { font-size: 11px; }
+  .player-controls { gap: 6px; }
+  .player-btn { width: 32px; height: 32px; font-size: 14px; }
+  .player-btn.small { width: 28px; height: 28px; font-size: 11px; }
+  .player-progress { height: 6px; }
+  .player-time { font-size: 10px; min-width: 28px; }
   .home-col-left,
-  .home-col-right { max-width: 100%; padding-top: 10px; display: none; }
+  .home-col-right { display: none; }
   .home-col-center { padding-top: 10px; }
   .article-featured-body { padding: 20px; }
   .articles-grid { grid-template-columns: 1fr; }
   .explore-grid { grid-template-columns: 1fr; }
+  .article-detail-close { width: 44px; height: 44px; font-size: 18px; } /* 增大关闭按钮 */
+}
+
+/* 小屏手机 (< 480px) */
+@media (max-width: 480px) {
+  .section { padding: 40px 12px 80px; }
+  .section-title { font-size: 18px; }
+  .clock-frame { padding: 16px; }
+  .clock-frame .clock-time { font-size: 28px; letter-spacing: 1px; }
+  .clock-frame .clock-date { font-size: 13px; }
+  #home { padding: 10px; }
+  .home-three-col { transform: translateY(-3%); gap: 8px; }
+  .home-search { max-width: 260px; }
+  .home-search input { padding: 10px 14px; font-size: 14px; }
+  .home-search button { width: 40px; font-size: 16px; }
+  .player-widget { padding: 10px 12px; }
+  .player-cover { width: 32px; height: 32px; font-size: 14px; }
+  .player-header { gap: 6px; margin-bottom: 6px; }
+  .player-info .song-title { font-size: 12px; }
+  .player-info .song-artist { font-size: 10px; }
+  .player-controls { gap: 4px; }
+  .player-btn { width: 28px; height: 28px; font-size: 12px; }
+  .player-btn.small { width: 24px; height: 24px; font-size: 10px; }
+  .player-progress { height: 5px; }
+  .player-time { font-size: 9px; min-width: 24px; }
+  .article-detail-card { padding: 16px; }
+  .article-detail-card h1 { font-size: 20px; }
+  .article-detail-card .content { font-size: 15px; }
+  .article-featured-cover { height: 100px; }
+  .article-card-cover { height: 90px; }
+  .bottom-nav-item { padding: 2px 10px; min-width: 44px; }
+  .bottom-nav-item span { font-size: 9px; }
+  .explore-tab { padding: 6px 14px; font-size: 13px; }
+  .page-btn { padding: 6px 14px; font-size: 13px; }
 }
 
 /* ===== 文章详情弹窗 ===== */
@@ -809,7 +856,8 @@ body.dark-mode .skeleton {
 
 /* ===== 响应式（文章详情） ===== */
 @media (max-width: 768px) {
-  .article-detail-card { width: 100%; max-width: 100%; max-height: 100vh; border-radius: 0; padding: 20px; }
+  .article-detail-card { width: 100%; max-width: 100%; max-height: 100vh; border-radius: 0; padding: 20px; padding-top: 40px; }
+  .article-detail-close { top: 8px; right: 8px; width: 44px; height: 44px; font-size: 18px; }
   .article-detail-layout { flex-direction: column; }
   .article-detail-sidebar { flex: none; width: 100%; position: static; max-height: none; }
   .article-featured-cover { height: 140px; }
