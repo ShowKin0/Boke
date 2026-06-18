@@ -492,11 +492,11 @@ function exportData() {
   URL.revokeObjectURL(a.href);
   showToast('已导出 boke-data.json，请替换到 data/ 目录');
 }
-function importData(input) {
+async function importData(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = async function(e) {
     try {
       const data = JSON.parse(e.target.result);
       let store;
@@ -508,17 +508,19 @@ function importData(input) {
           if (key === 'theme') store.theme = item.data;
           else if (Array.isArray(item.data)) store[key] = item.data;
         });
-      } else if (data.articles || data.updates) {
+      } else if (data.articles || data.updates || data.explores || data.music || data.theme) {
         // 兼容旧格式: {articles, updates, ...}
         store = { ...getDefaultStore(), ...data };
       } else {
         showToast('无法识别的数据格式', 'error'); return;
       }
       saveStore(store);
-      // 同步到服务器
-      ['articles','updates','explores','music','theme'].forEach(k => {
-        if (store[k]) syncToServer(k, store[k]);
-      });
+      // 同步到服务器（等待全部完成）
+      await Promise.all(
+        ['articles','updates','explores','music','theme']
+          .filter(k => store[k])
+          .map(k => syncToServer(k, store[k]))
+      );
       showToast('数据已导入并同步到文件！页面即将刷新');
       setTimeout(() => location.reload(), 1000);
     } catch(err) {

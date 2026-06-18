@@ -129,10 +129,6 @@ async function handleUpload(req, res) {
 }
 
 async function handleViewCount(req, res, type, id) {
-  if (!requireAuth(req)) {
-    sendError(res, 401, 'Unauthorized');
-    return true;
-  }
   const items = readData(type);
   const item = items.find(i => i.id === id);
   if (!item) {

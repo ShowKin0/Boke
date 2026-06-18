@@ -131,13 +131,8 @@
   }
 
   async function incrementView(type, id) {
-    const token = getToken();
-    if (!token) return;
     try {
-      await fetch(`/api/data/${type}/${id}/view`, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
+      await fetch(`/api/data/${type}/${id}/view`, { method: 'POST' });
     } catch {}
   }
 
