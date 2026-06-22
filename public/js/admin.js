@@ -117,12 +117,13 @@ function createRichEditor(editorId, placeholder) {
     <div contenteditable="true" class="article-editor" id="${editorId}" data-placeholder="${placeholder || ''}"></div>
   `;
   // 工具栏点击委派
+  const editor = wrap.querySelector('.article-editor');
   wrap.querySelector('.editor-toolbar').addEventListener('click', function(e) {
     const btn = e.target.closest('.ed-btn');
     if (!btn) return;
     e.preventDefault();
     const cmd = btn.dataset.cmd;
-    const ed = activeEditor || document.getElementById(editorId);
+    const ed = editor || activeEditor;
     ed.focus();
     switch (cmd) {
       case 'bold': case 'italic': case 'strikeThrough':
@@ -183,7 +184,6 @@ function createRichEditor(editorId, placeholder) {
     updateToolbarState();
   });
   // 焦点跟踪 + 选中态更新
-  const editor = wrap.querySelector('.article-editor');
   editor.addEventListener('focus', () => { activeEditor = editor; });
   editor.addEventListener('mouseup', updateToolbarState);
   editor.addEventListener('keyup', updateToolbarState);
@@ -226,9 +226,15 @@ function updateToolbarState() {
 }
 
 // ===== 代码块弹窗 =====
+/** 当前代码块弹窗的目标编辑器引用（直接存对象，不依赖 DOM 查找） */
+let _codeModalTarget = null;
+
 function openCodeModal(editor) {
-  activeEditor = editor || activeEditor || document.getElementById('articleContent');
-  document.getElementById('codeModal').style.display = 'block';
+  _codeModalTarget = editor || activeEditor || document.getElementById('articleContent');
+  activeEditor = _codeModalTarget;
+  const modal = document.getElementById('codeModal');
+  if (!modal) return;
+  modal.style.display = 'block';
   document.getElementById('codeInput').value = '';
   document.getElementById('codeOverlayContent').innerHTML = '';
   document.getElementById('codeGutter').textContent = '1';
@@ -288,7 +294,7 @@ bindFileUpload('imageFileInput', 5 * 1024 * 1024, '图片超过 5MB 限制', {
   failMsg: '图片已插入（本地模式）',
   onOk(url, name) {
     const img = `<img src="${url}" alt="${name}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
-    (activeEditor || document.getElementById('articleContent')).focus();
+    if (activeEditor) activeEditor.focus();
     document.execCommand('insertHTML', false, img);
   },
 });
@@ -421,16 +427,38 @@ function insertCodeBlock() {
   const code = document.getElementById('codeInput').value;
   if (!code.trim()) { showToast('请输入代码', 'error'); return; }
   const lang = document.getElementById('codeLangSelect').value;
-  const editor = activeEditor || document.getElementById('articleContent');
+  // 用 _codeModalTarget（打开弹窗时存下的编辑器引用），不依赖 activeEditor
+  const editor = _codeModalTarget || activeEditor;
+  if (!editor) { showToast('请先点击编辑器', 'error'); return; }
   editor.focus();
   // 用 pre 标签包装代码块
   const highlighted = highlightCodeText(code, lang);
   const langAttr = lang ? ` data-lang="${lang}"` : '';
   const html = `<pre${langAttr}><code class="language-${lang || 'plaintext'}">${highlighted}</code></pre>`;
-  document.execCommand('insertHTML', false, html + '<p><br></p>');
+  // 确保编辑器有有效选区，否则 execCommand 可能静默失败
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || !sel.anchorNode) {
+    const range = document.createRange();
+    range.setStart(editor, editor.childNodes.length || 0);
+    range.collapse(true);
+    if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+  }
+  // 尝试 execCommand，失败则回退到 Selection API
+  const success = document.execCommand('insertHTML', false, html + '<p><br></p>');
+  if (!success) {
+    // 回退方案：直接操作选区
+    const r = sel && sel.rangeCount ? sel.getRangeAt(0) : document.createRange();
+    const fragment = r.createContextualFragment(html + '<p><br></p>');
+    r.deleteContents();
+    r.insertNode(fragment);
+    const lastEl = fragment.lastChild || fragment;
+    r.setStartAfter(lastEl);
+    r.collapse(true);
+    if (sel) { sel.removeAllRanges(); sel.addRange(r); }
+  }
   closeCodeModal();
   showToast('代码块已插入');
-}
+ }
 // 代码输入同步滚动 + 编辑器初始化
 document.addEventListener('DOMContentLoaded', () => {
   const codeInput = document.getElementById('codeInput');
@@ -555,6 +583,8 @@ function logout() {
   });
 }
 function switchTab(tab) {
+  // 切换 tab 时关闭可能打开的代码块弹窗
+  closeCodeModal();
   currentTab = tab;
   document.querySelectorAll('.admin-nav-item[data-tab]').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(el => el.style.display = el.id === 'tab-'+tab ? 'block' : 'none');

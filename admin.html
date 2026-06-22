@@ -58,45 +58,7 @@
           <input type="file" id="imageFileInput" accept="image/*" style="display:none">
           <input type="color" id="foreColorInput" value="#e74c3c" style="display:none">
         </div>
-        <!-- 代码块编辑器弹窗 -->
-        <div class="code-modal" id="codeModal">
-          <div class="code-modal-inner">
-            <div class="code-modal-header">
-              <span>编辑代码块</span>
-              <button class="code-modal-close" onclick="closeCodeModal()">✕</button>
-            </div>
-            <div class="code-modal-body">
-              <div class="code-lang-bar">
-                <select id="codeLangSelect" class="code-lang-select">
-                  <option value="">选择语言</option>
-                  <option value="javascript">JavaScript</option>
-                  <option value="typescript">TypeScript</option>
-                  <option value="python">Python</option>
-                  <option value="html">HTML</option>
-                  <option value="css">CSS</option>
-                  <option value="cpp">C++</option>
-                  <option value="java">Java</option>
-                  <option value="go">Go</option>
-                  <option value="rust">Rust</option>
-                  <option value="c">C</option>
-                  <option value="sql">SQL</option>
-                  <option value="bash">Bash</option>
-                </select>
-              </div>
-              <div class="code-editor-atom">
-                <div class="code-gutter" id="codeGutter">1</div>
-                <div class="code-input-wrap">
-                  <textarea id="codeInput" class="code-input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" data-gramm="false" placeholder="在此输入代码..."></textarea>
-                  <pre class="code-overlay" id="codeOverlay"><code id="codeOverlayContent"></code></pre>
-                </div>
-              </div>
-            </div>
-            <div class="code-modal-footer">
-              <button class="btn-secondary" onclick="closeCodeModal()">取消</button>
-              <button class="btn-primary" onclick="insertCodeBlock()">插入代码块</button>
-            </div>
-          </div>
-        </div>
+        
         <div class="form-actions">
           <button class="btn-primary" id="articleSubmitBtn" onclick="articles.save()">发布文章</button>
           <button class="btn-secondary" onclick="articles.cancel()" style="display:none" id="articleCancelBtn">取消</button>
@@ -247,6 +209,48 @@
       </div>
     </div>
   </div>
+
+
+
+<!-- 代码块编辑器弹窗 -->
+        <div class="code-modal" id="codeModal">
+          <div class="code-modal-inner">
+            <div class="code-modal-header">
+              <span>编辑代码块</span>
+              <button class="code-modal-close" onclick="closeCodeModal()">✕</button>
+            </div>
+            <div class="code-modal-body">
+              <div class="code-lang-bar">
+                <select id="codeLangSelect" class="code-lang-select">
+                  <option value="">选择语言</option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="python">Python</option>
+                  <option value="html">HTML</option>
+                  <option value="css">CSS</option>
+                  <option value="cpp">C++</option>
+                  <option value="java">Java</option>
+                  <option value="go">Go</option>
+                  <option value="rust">Rust</option>
+                  <option value="c">C</option>
+                  <option value="sql">SQL</option>
+                  <option value="bash">Bash</option>
+                </select>
+              </div>
+              <div class="code-editor-atom">
+                <div class="code-gutter" id="codeGutter">1</div>
+                <div class="code-input-wrap">
+                  <textarea id="codeInput" class="code-input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" data-gramm="false" placeholder="在此输入代码..."></textarea>
+                  <pre class="code-overlay" id="codeOverlay"><code id="codeOverlayContent"></code></pre>
+                </div>
+              </div>
+            </div>
+            <div class="code-modal-footer">
+              <button class="btn-secondary" onclick="closeCodeModal()">取消</button>
+              <button class="btn-primary" onclick="insertCodeBlock()">插入代码块</button>
+            </div>
+          </div>
+        </div>
 </div>
 
 <!-- ===== 确认弹窗 ===== -->
