@@ -216,6 +216,7 @@ body {
 .home-search {
   display: flex; gap: 8px; width: 100%; max-width: 480px;
   position: relative;
+  z-index: 10;
 }
 .home-search input {
   flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.06);
