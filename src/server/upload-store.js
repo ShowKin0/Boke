@@ -27,7 +27,8 @@ function saveDataUrl(dataUrl) {
 
   const mime = matches[1];
   const base64Data = matches[2];
-  const ext = MIME_EXTENSIONS[mime] || mime.split('/')[1] || 'bin';
+  const rawExt = MIME_EXTENSIONS[mime] || mime.split('/')[1] || 'bin';
+  const ext = rawExt.toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
   const fileName = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}.${ext}`;
   const filePath = path.join(UPLOADS_DIR, fileName);
 

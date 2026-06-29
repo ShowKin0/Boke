@@ -25,7 +25,12 @@ const MIME_TYPES = {
 
 function resolveStaticPath(reqUrl) {
   const url = new URL(reqUrl, 'http://localhost');
-  const urlPath = url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname);
+  let urlPath;
+  try {
+    urlPath = url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname);
+  } catch {
+    return null;
+  }
   const filePath = path.resolve(ROOT, `.${urlPath}`);
 
   if (filePath !== ROOT && !filePath.startsWith(ROOT + path.sep)) {

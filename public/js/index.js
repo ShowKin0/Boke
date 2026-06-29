@@ -224,7 +224,7 @@ function renderHomeArticles() {
   let html = '<h4>📖 最新文章</h4>';
   articles.slice(0, 5).forEach(a => {
     html += `<div class="mini-card" onclick="showArticle('${a.id}')">
-      <div class="mini-title">${a.title || '无标题'}</div>
+      <div class="mini-title">${escapeHtml(a.title || '无标题')}</div>
       ${a.summary ? `<div class="mini-content">${escapeHtml(a.summary)}</div>` : ''}
       <div class="mini-meta">${formatDateCached(a.createdAt)}${a.views ? ` · 👁️ ${a.views}` : ''}</div>
     </div>`;
@@ -261,6 +261,15 @@ function renderPagination(page, totalPages, onChange) {
 
 function scrollToSection(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function safeLink(url, fallback = '#') {
+  const value = String(url || '').trim();
+  if (!value) return fallback;
+  if (/^(https?:)?\/\//i.test(value) || value.startsWith('/') || value.startsWith('data/uploads/')) {
+    return value;
+  }
+  return fallback;
 }
 
 // ===== 文章过滤工具 =====
@@ -373,10 +382,10 @@ function renderArticles() {
   const featured = filtered.find(a => a.pinned) || filtered[0];
   const coverUrl = featured.cover;
   html += `<div class="article-featured fade-up" onclick="showArticle('${featured.id}')" style="cursor:pointer;">
-    ${coverUrl ? `<div class="article-featured-cover"><img src="${coverUrl}" alt=""></div>` : ''}
+    ${coverUrl ? `<div class="article-featured-cover"><img src="${escapeHtml(coverUrl)}" alt=""></div>` : ''}
     <div class="article-featured-body">
-      <h2>${featured.title || '无标题'}</h2>
-      <p>${featured.summary || '暂无摘要'}</p>
+      <h2>${escapeHtml(featured.title || '无标题')}</h2>
+      <p>${escapeHtml(featured.summary || '暂无摘要')}</p>
       <div class="meta">
         ${formatDateCached(featured.createdAt)}
         ${featured.tags ? featured.tags.map(t => `<span class="card-tag">${escapeHtml(t)}</span>`).join('') : ''}
@@ -396,11 +405,11 @@ function renderArticles() {
     html += '<div class="articles-grid" style="margin-top:24px;">';
     pageItems.forEach(a => {
       html += `<div class="glass-card fade-up" onclick="showArticle('${a.id}')" style="cursor:pointer;${a.cover ? 'padding:0;overflow:hidden;' : ''}">
-        ${a.cover ? `<div class="article-card-cover"><img src="${a.cover}" alt=""></div>` : ''}
+        ${a.cover ? `<div class="article-card-cover"><img src="${escapeHtml(a.cover)}" alt=""></div>` : ''}
         <div class="article-card-body" style="${a.cover ? 'padding:16px 20px;' : ''}">
-          <h3>${a.title || '无标题'}</h3>
+          <h3>${escapeHtml(a.title || '无标题')}</h3>
           <div class="card-date">${formatDateCached(a.createdAt)} ${a.views ? `👁️ ${a.views}` : ''}</div>
-          <div class="card-summary">${truncate(a.summary, 80)}</div>
+          <div class="card-summary">${escapeHtml(truncate(a.summary, 80))}</div>
           ${a.tags ? a.tags.map(t => `<span class="card-tag">${escapeHtml(t)}</span>`).join('') : ''}
         </div>
       </div>`;
@@ -483,12 +492,12 @@ function renderExplores(category) {
     const categoryLabel = CATEGORY_LABELS[e.category] || e.category || '其他';
     const iconHtml = (e.icon && (e.icon.startsWith('data:') || e.icon.startsWith('data/') || e.icon.startsWith('http')))
       ? `<img class="explore-icon-img" src="${escapeHtml(e.icon)}" alt="">`
-      : `<span class="icon">${e.icon || '🔗'}</span>`;
-    html += `<a class="explore-item fade-up" href="${e.url || '#'}" target="_blank" rel="noopener">
+      : `<span class="icon">${escapeHtml(e.icon || '🔗')}</span>`;
+    html += `<a class="explore-item fade-up" href="${escapeHtml(safeLink(e.url))}" target="_blank" rel="noopener">
       ${iconHtml}
       <h4>${escapeHtml(e.title || '')}</h4>
       <p>${e.description || ''}</p>
-      <span class="explore-category">${categoryLabel}</span>
+      <span class="explore-category">${escapeHtml(categoryLabel)}</span>
     </a>`;
   });
   container.innerHTML = html;
@@ -526,7 +535,7 @@ function generateTOC(html) {
 function showArticle(id) {
   const a = articles.find(x => x.id === id);
   if (!a) return;
-  const tags = a.tags ? a.tags.map(t => `<span class="card-tag" style="display:inline-block;padding:2px 12px;background:rgba(135,206,235,0.15);color:var(--secondary);border-radius:6px;font-size:13px;margin-right:4px;">${t}</span>`).join('') : '';
+  const tags = a.tags ? a.tags.map(t => `<span class="card-tag" style="display:inline-block;padding:2px 12px;background:rgba(135,206,235,0.15);color:var(--secondary);border-radius:6px;font-size:13px;margin-right:4px;">${escapeHtml(t)}</span>`).join('') : '';
   const date = a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN', {year:'numeric',month:'long',day:'numeric'}) : '';
   const readingTime = estimateReadingTime(a.content);
   const tocResult = generateTOC(a.content);
@@ -537,7 +546,7 @@ function showArticle(id) {
   document.title = a.title ? `${a.title} - Bōkè` : 'Bōkè - 个人博客';
 
   document.getElementById('articleDetailContent').innerHTML = `
-    ${a.cover ? `<div class="article-detail-cover"><img src="${a.cover}" alt=""></div>` : ''}
+    ${a.cover ? `<div class="article-detail-cover"><img src="${escapeHtml(a.cover)}" alt=""></div>` : ''}
     <h1>${escapeHtml(a.title || '')}</h1>
     <div class="meta">${date} ${readingTime ? `<span class="reading-time">📖 ${readingTime}</span>` : ''} ${tags}</div>
     <div class="article-detail-layout">
@@ -804,7 +813,7 @@ function renderPlaylist() {
   playlist.innerHTML = musicList.map((s, i) =>
     `<div class="playlist-item ${i === currentSongIndex ? 'active' : ''}" onclick="playSong(${i})">
       <span>${i === currentSongIndex && isPlaying ? '🔊' : '🎵'}</span>
-      <span>${s.title || '未知'} - ${s.artist || '未知'}</span>
+      <span>${escapeHtml(s.title || '未知')} - ${escapeHtml(s.artist || '未知')}</span>
     </div>`
   ).join('');
 }

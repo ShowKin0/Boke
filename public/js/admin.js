@@ -293,7 +293,7 @@ bindFileUpload('imageFileInput', 5 * 1024 * 1024, '图片超过 5MB 限制', {
   okMsg: '图片已上传',
   failMsg: '图片已插入（本地模式）',
   onOk(url, name) {
-    const img = `<img src="${url}" alt="${name}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
+    const img = `<img src="${escapeHtml(url)}" alt="${escapeHtml(name)}" style="max-width:55%;max-height:260px;float:left;margin:0.5em 1em 0.5em 0;border-radius:8px;object-fit:contain;">`;
     if (activeEditor) activeEditor.focus();
     document.execCommand('insertHTML', false, img);
   },
@@ -789,9 +789,9 @@ function togglePin(id) {
   const items = store.articles || [];
   const idx = items.findIndex(i => i.id === id);
   if (idx === -1) return;
-  // 如果已有其他置顶，先全部取消
+  const shouldPin = !items[idx].pinned;
   items.forEach(i => i.pinned = false);
-  items[idx].pinned = !items[idx].pinned;
+  items[idx].pinned = shouldPin;
   store.articles = items;
   saveStore(store);
   syncToServer('articles', items);

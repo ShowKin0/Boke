@@ -23,6 +23,31 @@ function getSiteUrl(req) {
   return `${proto}://${host}`;
 }
 
+function escapeXml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function cdata(value) {
+  return `<![CDATA[${String(value ?? '').replace(/]]>/g, ']]]]><![CDATA[>')}]]>`;
+}
+
+function toRssDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toUTCString();
+}
+
+function toIsoDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+}
+
 async function handleApi(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const pathname = url.pathname;
@@ -129,7 +154,17 @@ async function handleUpload(req, res) {
 }
 
 async function handleViewCount(req, res, type, id) {
+  if (!isDataType(type)) {
+    sendError(res, 404, `Unknown data type: ${type}`);
+    return true;
+  }
+
   const items = readData(type);
+  if (!Array.isArray(items)) {
+    sendError(res, 400, `Data type ${type} does not support view counts`);
+    return true;
+  }
+
   const item = items.find(i => i.id === id);
   if (!item) {
     sendError(res, 404, 'Item not found');
@@ -148,20 +183,20 @@ function handleRSS(req, res) {
 
   let items = articles.map(a => `
     <item>
-      <title><![CDATA[${a.title || '无标题'}]]></title>
-      <link>${siteUrl}/?article=${a.id}</link>
-      <description><![CDATA[${a.summary || a.title || ''}]]></description>
-      <pubDate>${a.createdAt ? new Date(a.createdAt).toUTCString() : ''}</pubDate>
-      <guid isPermaLink="false">${a.id}</guid>
+      <title>${cdata(a.title || '无标题')}</title>
+      <link>${escapeXml(`${siteUrl}/?article=${encodeURIComponent(a.id || '')}`)}</link>
+      <description>${cdata(a.summary || a.title || '')}</description>
+      <pubDate>${escapeXml(toRssDate(a.createdAt))}</pubDate>
+      <guid isPermaLink="false">${escapeXml(a.id || '')}</guid>
     </item>`).join('');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Bōkè</title>
-    <link>${siteUrl}</link>
+    <link>${escapeXml(siteUrl)}</link>
     <description>个人博客</description>
-    <atom:link href="${siteUrl}/feed.xml" rel="self" type="application/rss+xml"/>
+    <atom:link href="${escapeXml(`${siteUrl}/feed.xml`)}" rel="self" type="application/rss+xml"/>
     ${items}
   </channel>
 </rss>`;
@@ -176,13 +211,13 @@ function handleSitemap(req, res) {
 
   let urls = articles.map(a => `
   <url>
-    <loc>${siteUrl}/?article=${encodeURIComponent(a.id)}</loc>
-    <lastmod>${a.createdAt ? new Date(a.createdAt).toISOString() : ''}</lastmod>
+    <loc>${escapeXml(`${siteUrl}/?article=${encodeURIComponent(a.id || '')}`)}</loc>
+    <lastmod>${escapeXml(toIsoDate(a.createdAt))}</lastmod>
   </url>`).join('');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>${siteUrl}/</loc></url>
+  <url><loc>${escapeXml(`${siteUrl}/`)}</loc></url>
   ${urls}
 </urlset>`;
 
