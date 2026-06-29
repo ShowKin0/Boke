@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { UPLOADS_DIR } = require('./config');
+const { ALLOWED_UPLOAD_MIME, UPLOAD_MAX_BYTES, UPLOADS_DIR } = require('./config');
 
 const MIME_EXTENSIONS = {
   'image/png': 'png',
@@ -26,13 +26,22 @@ function saveDataUrl(dataUrl) {
   }
 
   const mime = matches[1];
+  if (!ALLOWED_UPLOAD_MIME.has(mime)) {
+    throw new Error(`Unsupported file type: ${mime}`);
+  }
+
   const base64Data = matches[2];
+  const fileBuffer = Buffer.from(base64Data, 'base64');
+  if (fileBuffer.length > UPLOAD_MAX_BYTES) {
+    throw new Error(`File exceeds ${Math.round(UPLOAD_MAX_BYTES / 1024 / 1024)}MB limit`);
+  }
+
   const rawExt = MIME_EXTENSIONS[mime] || mime.split('/')[1] || 'bin';
   const ext = rawExt.toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
   const fileName = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}.${ext}`;
   const filePath = path.join(UPLOADS_DIR, fileName);
 
-  fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+  fs.writeFileSync(filePath, fileBuffer);
 
   return {
     url: `data/uploads/${fileName}`,
@@ -41,5 +50,6 @@ function saveDataUrl(dataUrl) {
 }
 
 module.exports = {
+  MIME_EXTENSIONS,
   saveDataUrl,
 };

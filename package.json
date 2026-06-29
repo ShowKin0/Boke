@@ -5,6 +5,9 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "check": "node --check server.js && node --check src/server/app.js && node --check src/server/api-routes.js && node --check src/server/config.js && node --check src/server/data-store.js && node --check src/server/http-utils.js && node --check src/server/static-files.js && node --check src/server/upload-store.js && node --check public/js/shared.js && node --check public/js/admin-list.js && node --check public/js/admin.js && node --check public/js/index-player-config.js && node --check public/js/index.js",
+    "test": "node --test test/*.test.js",
+    "smoke": "node --test test/smoke.test.js"
   }
 }

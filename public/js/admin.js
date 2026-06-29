@@ -1,4 +1,4 @@
-const PASS = 'zhang';
+const OFFLINE_PASS = 'zhang';
 const {
   loadStoreOrDefault,
   saveStore,
@@ -14,6 +14,8 @@ const {
   clearToken,
   loginWithServer,
   logoutFromServer,
+  showToast: sharedShowToast,
+  loadDataWithFallback,
 } = window.Boke;
 
 // ===== 服务器同步 =====
@@ -22,7 +24,7 @@ async function syncToServer(type, data) {
     await syncDataToServer(type, data, getToken());
   } catch (e) {
     // 检查是否是 401 未授权
-    if (e.message && e.message.includes('401')) {
+    if (e.status === 401 || (e.message && e.message.includes('401'))) {
       showToast('登录已过期，请重新登录', 'error');
       setTimeout(() => logout(), 1500);
       return;
@@ -35,7 +37,9 @@ async function syncToServer(type, data) {
 let store = loadStoreOrDefault();
 let currentTab = 'articles';
 
-function showToast(msg, type) { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast '+(type||'success'); t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
+function showToast(msg, type) {
+  sharedShowToast(msg, type, { id: 'toast' });
+}
 
 // ===== 确认弹窗 =====
 let _confirmCb = null;
@@ -561,15 +565,24 @@ async function importData(input) {
 async function login() {
   const pw = document.getElementById('passwordInput').value.trim();
   if (!pw) { showToast('请输入密码', 'error'); return; }
-  if (pw !== PASS) { document.getElementById('loginError').style.display='block'; return; }
-  // 服务器端认证
+
+  let canEnterOffline = false;
   try {
     const token = await loginWithServer(pw);
     saveToken(token, true);
-  } catch {
-    // 服务器未运行，纯客户端模式
+  } catch (error) {
+    if (error.status === 401) {
+      document.getElementById('loginError').style.display='block';
+      return;
+    }
+    canEnterOffline = pw === OFFLINE_PASS;
+    if (!canEnterOffline) {
+      document.getElementById('loginError').style.display='block';
+      return;
+    }
     clearToken();
   }
+
   document.getElementById('loginPage').style.display='none';
   document.getElementById('adminPage').style.display='block';
   loadAll();
@@ -590,82 +603,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(el => el.style.display = el.id === 'tab-'+tab ? 'block' : 'none');
 }
 
-// ===== 后台列表搜索分页工具（通用） =====
-const adminList = {
-  _cfgs: {},
-
-  /** 注册一个列表类型 */
-  register(key, cfg) {
-    this._cfgs[key] = {
-      searchFields: cfg.searchFields || [],
-      searchInputId: cfg.searchInputId || key + 'SearchInput',
-      pageInputId: cfg.pageInputId || key + 'Page',
-      pageSize: cfg.pageSize || 10,
-      sortFn: cfg.sortFn || null,
-    };
-  },
-
-  /** 获取过滤后的完整列表 */
-  getFiltered(key, items) {
-    const cfg = this._cfgs[key];
-    const q = (document.getElementById(cfg.searchInputId)?.value || '').trim().toLowerCase();
-    let result = q
-      ? items.filter(item =>
-          cfg.searchFields.some(field => {
-            const val = field(item);
-            return val && val.toLowerCase().includes(q);
-          })
-        )
-      : [...items];
-    if (cfg.sortFn) result.sort(cfg.sortFn);
-    return result;
-  },
-
-  /** 分页切片 */
-  getPage(key, items) {
-    const cfg = this._cfgs[key];
-    const page = parseInt(document.getElementById(cfg.pageInputId)?.value || '1');
-    const totalPages = Math.ceil(items.length / cfg.pageSize) || 1;
-    return { items: items.slice((page - 1) * cfg.pageSize, page * cfg.pageSize), page, totalPages };
-  },
-
-  /** 渲染分页导航（colspan 为表格列数，updates 等卡片式传 'card'） */
-  pageNav(key, page, totalPages, loadFnName, colspan) {
-    if (totalPages <= 1) return '';
-    const nav = `<div class="admin-pagination">
-      <button class="page-btn" onclick="window._adminPagePrev('${key}')" ${page <= 1 ? 'disabled' : ''}>←</button>
-      <span>${page}/${totalPages}</span>
-      <button class="page-btn" onclick="window._adminPageNext('${key}')" ${page >= totalPages ? 'disabled' : ''}>→</button>
-    </div>`;
-    if (colspan === 'card') {
-      return `<div style="margin-top:16px;">${nav}</div>`;
-    }
-    return `<tr class="pagination-row"><td colspan="${colspan}">${nav}</td></tr>`;
-  },
-
-  /** 输入框搜索时重置到第一页 */
-  filter(key, loadFn) {
-    const inp = document.getElementById(this._cfgs[key].pageInputId);
-    if (inp) inp.value = 1;
-    loadFn();
-  },
-};
-
-// 全局翻页函数（给 pageNav 的 onclick 用，运行时才查找对应 CRUD 实例）
-window._adminPagePrev = function (key) {
-  const cfg = adminList._cfgs[key];
-  const inp = document.getElementById(cfg.pageInputId);
-  let p = parseInt(inp?.value || '1');
-  if (p > 1) inp.value = p - 1;
-  window[key]?.load();
-};
-window._adminPageNext = function (key) {
-  const cfg = adminList._cfgs[key];
-  const inp = document.getElementById(cfg.pageInputId);
-  let p = parseInt(inp?.value || '1');
-  inp.value = p + 1;
-  window[key]?.load();
-};
+const adminList = window.BokeAdminList;
 
 // ===== 注册所有列表配置 =====
 adminList.register('articles', {
@@ -979,9 +917,11 @@ function getThemeData() { return { bgColor:document.getElementById('themeBg').va
 function saveTheme() { store.theme = getThemeData(); saveStore(store); syncToServer('theme', store.theme); showToast('主题已保存'); }
 function resetTheme() { store.theme = {...window.Boke.DEFAULT_THEME}; saveStore(store); syncToServer('theme', store.theme); loadTheme(); showToast('已重置'); }
 
-function loadAll() {
+async function loadAll() {
   try {
-    store = loadStoreOrDefault();
+    const data = await loadDataWithFallback();
+    store = { ...getDefaultStore(), ...(data || loadStoreOrDefault()) };
+    saveStore(store);
     articles.load(); updates.load(); explores.load(); music.load(); loadTheme();
     // 初始化探索子标签
     document.querySelectorAll('.explore-sub-tab').forEach(el => {

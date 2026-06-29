@@ -1,5 +1,14 @@
 // ===== 状态管理 =====
-const { loadStore, saveStore, escapeHtml, truncate, formatDateCached } = window.Boke;
+const {
+  saveStore,
+  escapeHtml,
+  truncate,
+  formatDateCached,
+  applyThemeVariables,
+  loadDataWithFallback,
+  renderPagination: sharedRenderPagination,
+  showToast: sharedShowToast,
+} = window.Boke;
 
 // 检查 ?clear 参数，清除 localStorage 缓存
 if (window.location.search.includes('clear')) {
@@ -44,52 +53,18 @@ function applyData(data) {
 }
 
 async function loadAll() {
-  // 数据源链：依次尝试，第一个成功的就用
-  const sources = [
-    // 1. 服务器 API（数据来自 data/*.json 文件）
-    async () => {
-      const res = await fetch('/api/data');
-      if (!res.ok) throw new Error('API offline');
-      return res.json();
-    },
-    // 2. localStorage 缓存
-    () => loadStore(),
-    // 3. 首次访问：从 data/*.json 种子文件加载
-    async () => {
-      const files = ['articles', 'updates', 'explores', 'music', 'theme'];
-      const data = {};
-      for (const key of files) {
-        const res = await fetch(`data/${key}.json`);
-        if (res.ok) data[key] = await res.json();
-      }
-      if (!data.articles) throw new Error('No seed data');
-      data.theme = data.theme || {};
-      return data;
-    },
-  ];
-  for (const src of sources) {
-    try {
-      const data = await src();
-      if (data) {
-        saveStore(data);
-        applyData(data);
-        return;
-      }
-    } catch { /* 尝试下一个源 */ }
+  const data = await loadDataWithFallback();
+  if (data) {
+    saveStore(data);
+    applyData(data);
+    return;
   }
-  // 都没数据，渲染空白状态
   applyData(null);
 }
 
 // ===== 主题 =====
 function applyTheme(t) {
-  const r = document.documentElement.style;
-  if (t.bgColor) r.setProperty('--bg', t.bgColor);
-  if (t.primaryColor) r.setProperty('--primary', t.primaryColor);
-  if (t.secondaryColor) r.setProperty('--secondary', t.secondaryColor);
-  if (t.cardBg) r.setProperty('--card-bg', t.cardBg);
-  if (t.textColor) r.setProperty('--text', t.textColor);
-  if (t.textSecondary) r.setProperty('--text-secondary', t.textSecondary);
+  applyThemeVariables(t);
 }
 
 // ===== 时钟（DOM 引用缓存，每秒高频调用） =====
@@ -251,12 +226,7 @@ function renderHomeUpdates() {
 
 // ===== 通用分页渲染 =====
 function renderPagination(page, totalPages, onChange) {
-  if (totalPages <= 1) return '';
-  return `<div class="pagination">
-    <button class="page-btn" onclick="${onChange}(${page - 1})" ${page <= 1 ? 'disabled' : ''}>← 上一页</button>
-    <span class="page-info">${page} / ${totalPages}</span>
-    <button class="page-btn" onclick="${onChange}(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>下一页 →</button>
-  </div>`;
+  return sharedRenderPagination(page, totalPages, onChange);
 }
 
 function scrollToSection(id) {
@@ -630,18 +600,7 @@ document.addEventListener('click', (e) => {
 
 // ===== 全局 Toast（首页用） =====
 function showToast(msg, type) {
-  const t = document.getElementById('homeToast') || (() => {
-    const el = document.createElement('div');
-    el.id = 'homeToast';
-    el.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 24px;border-radius:12px;background:var(--card-bg);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,0.12);font-size:14px;border:1px solid rgba(255,255,255,0.3);transition:opacity 0.3s;';
-    document.body.appendChild(el);
-    return el;
-  })();
-  t.textContent = msg;
-  t.style.display = 'block';
-  t.style.opacity = '1';
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 300); }, 2500);
+  sharedShowToast(msg, type, { id: 'homeToast', fallbackId: 'homeToast' });
 }
 
 // ===== 全局搜索 =====
@@ -779,13 +738,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ===== 音乐播放器 =====
-const PLAY_MODES = ['sequential', 'shuffle', 'loop'];
-const MODE_CONFIG = {
-  sequential: { icon: '➡️', label: '顺序播放', cls: 'mode-sequential' },
-  shuffle:    { icon: '🔀', label: '随机播放', cls: 'mode-shuffle' },
-  loop:       { icon: '🔁', label: '列表循环', cls: 'mode-loop' },
-};
-let playMode = 'sequential';
+const PLAY_MODES = window.BokePlayerConfig.modes;
+const MODE_CONFIG = window.BokePlayerConfig.modeConfig;
+let playMode = window.BokePlayerConfig.defaultMode;
 
 function getModeBtn() { return document.getElementById('modeBtn'); }
 

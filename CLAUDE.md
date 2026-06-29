@@ -1,153 +1,143 @@
-# Bōkè — 个人博客
+# Boke - 个人博客
 
-纯前端个人博客系统，搭配零依赖 Node.js 服务器，数据直接存储在 `data/*.json` 文件中，随 Git 一起管理。
+纯前端个人博客系统，搭配零依赖 Node.js 服务器。数据直接存储在 `data/*.json` 文件中，随 Git 一起管理。
+
+## 语言规则
+
+- 与用户交流必须使用中文。
+- 修改代码前先阅读现有结构，优先沿用项目当前的原生 HTML/CSS/JavaScript 风格。
+- 本项目保持零依赖：不引入框架、构建工具、数据库或第三方运行时依赖，除非用户明确要求。
 
 ## 技术栈
 
-- **语言**: 原生 HTML + CSS + JavaScript（无框架、无构建工具）
-- **服务端**: Node.js 内置 `http` 模块（零依赖）
-- **存储**: `data/*.json` 文件（磁盘持久化，git 跟踪）
-- **缓存**: `localStorage`（离线降级 + 快速访问）
+- 前端：原生 HTML + CSS + JavaScript
+- 服务端：Node.js 内置 `http` 模块
+- 存储：`data/*.json` 文件和 `data/uploads/`
+- 缓存：`localStorage`
+- 测试：Node.js 内置 `node:test`
 
-## 项目架构
+## 项目结构
 
-```
+```text
 Boke/
-├── index.html              # 前台页面骨架
-├── admin.html              # 后台页面骨架
-├── style.css               # 前后台共享富文本样式
+├── index.html
+├── admin.html
+├── style.css
 ├── public/
 │   ├── css/
-│   │   ├── index.css       # 前台页面样式
-│   │   └── admin.css       # 后台页面样式
+│   │   ├── index.css
+│   │   └── admin.css
 │   └── js/
-│       ├── shared.js       # 前后台共享工具：本地存储、日期、转义、同步
-│       ├── index.js        # 前台页面逻辑
-│       └── admin.js        # 后台管理逻辑
-├── server.js               # 服务端启动入口
+│       ├── shared.js              # 前后台共享工具
+│       ├── index.js               # 前台主逻辑
+│       ├── index-player-config.js # 前台播放器配置
+│       ├── admin.js               # 后台主逻辑
+│       └── admin-list.js          # 后台列表搜索和分页
+├── server.js
 ├── src/server/
-│   ├── app.js              # HTTP 服务创建和总分发
-│   ├── api-routes.js       # /api/data 与 /api/upload 路由
-│   ├── data-store.js       # data/*.json 初始化、读写和白名单
-│   ├── upload-store.js     # base64 上传落盘
-│   ├── static-files.js     # 静态文件服务
-│   ├── http-utils.js       # JSON body、JSON 响应、错误响应
-│   └── config.js           # 路径、端口、默认数据
-├── data/                   # 数据文件（磁盘持久化，git 跟踪）
+│   ├── app.js
+│   ├── api-routes.js
+│   ├── config.js
+│   ├── data-store.js
+│   ├── http-utils.js
+│   ├── static-files.js
+│   └── upload-store.js
+├── data/
 │   ├── articles.json
 │   ├── updates.json
 │   ├── explores.json
 │   ├── music.json
 │   ├── theme.json
 │   └── uploads/
+├── test/
+│   ├── server.test.js
+│   └── smoke.test.js
 └── package.json
 ```
 
-## 数据流
-
-```
-写作时:
-  选择图片 → POST /api/upload → 存到 data/uploads/ → 返回路径
-  保存文章 → POST /api/data/articles → 更新 data/articles.json
-
-浏览时:
-  index.html → GET /api/data → 读取所有 data/*.json → 渲染
-  文章引用图片 → <img src="data/uploads/xxx.jpg"> → 静态文件服务直出
-
-git:
-  git add data/  → 新文章、新图片全部被追踪
-  git commit -m "new post" → 数据跟着项目走
-```
-
-## 关键路径
-
-### 启动
+## 启动与验证
 
 ```bash
-node server.js
-# 或 npm start
+npm start
+npm.cmd run check
+npm.cmd test
+npm.cmd run smoke
 ```
 
-然后打开 `http://localhost:3000` 浏览，`http://localhost:3000/admin.html` 管理。
+如果 PowerShell 拦截 `npm`，使用 `npm.cmd`。
 
-### 服务端（server.js / src/server）
+访问地址：
 
-- `GET  /api/data` → 读取所有 data/\*.json，合并返回
-- `POST /api/data/:type` → 写入某一类型的 JSON 文件
-- `POST /api/upload` → 接收 base64 图片，存到 data/uploads/，返回 URL
-- `GET  /*` → 静态文件服务（HTML/CSS/JS/图片）
-- 新增数据类型时，先在 `src/server/config.js` 的 `DATA_TYPES` 和 `DEFAULT_DATA` 中登记，再补前后台渲染/管理逻辑
+- 前台：`http://localhost:3000`
+- 后台：`http://localhost:3000/admin.html`
 
-### 前端（index.html + public/js/index.js）
+## 服务端接口
 
-- `loadAll()` → 优先从 `/api/data` 加载 → localStorage 降级 → data/\*.json 降级
-- `applyTheme(theme)` → 应用主题 CSS 变量
-- `showArticle(id)` → 打开文章详情弹窗
-- 四个区域：首页（时钟+播放器）→ 文章 → 动态 → 探索（单页滚动）
+- `GET /api/data`：读取所有数据文件并合并返回。
+- `GET /api/data/:type`：读取单个数据类型。
+- `POST /api/data/:type`：写入单个数据类型，需要登录 Token。
+- `POST /api/upload`：接收 base64 data URL，保存到 `data/uploads/`，需要登录 Token。
+- `POST /api/login`：后台登录。
+- `POST /api/logout`：后台退出。
+- `GET /api/verify`：验证 Token。
+- `POST /api/data/:type/:id/view`：增加阅读计数。
+- `GET /feed.xml`：RSS。
+- `GET /sitemap.xml`：站点地图。
 
-### 后台（admin.html + public/js/admin.js）
+## 环境变量
 
-- **登录密码**: `zhang`（硬编码，纯前端项目请自行修改）
-- `createCRUD(cfg)` → CRUD 工厂函数，统一管理所有数据类型的增删改查
-- 每次保存自动调用 `syncToServer(type, data)` 写入磁盘文件
-- 图片上传 → 服务器存到 `data/uploads/` → 文章引用路径
-- 编辑器支持：WYSIWYG 富文本（contenteditable）、代码块弹窗（Atom One Dark 风格语法高亮）、图片文件选择上传
-
-### 共享前端工具（public/js/shared.js）
-
-- `loadStore()` / `saveStore()` → localStorage 读写
-- `syncToServer(type, data)` → 写入 `/api/data/:type`
-- `escapeHtml()` / `formatDate()` → 页面渲染通用工具
-- `getDefaultStore()` → 前后台一致的空数据结构
+- `PORT`：服务端端口，默认 `3000`。
+- `BOKE_ADMIN_PASSWORD`：后台服务端登录密码，默认 `zhang`。
+- `BOKE_TOKEN_TTL_MS`：登录 Token 有效期，默认 24 小时。
+- `BOKE_DATA_DIR`：数据目录，默认项目内 `data/`。测试和冒烟检查可用临时目录。
 
 ## 数据格式
 
-`data/*.json` 文件直接存储，与 localStorage 格式一致：
+`articles`、`updates`、`explores`、`music` 顶层必须是对象数组。
 
 ```json
-// articles.json
-[{ "id", "title", "summary", "content", "tags", "createdAt" }]
-
-// theme.json
-{ "bgColor", "primaryColor", "secondaryColor", "cardBg", "textColor", "textSecondary" }
+[
+  {
+    "id": "post-id",
+    "title": "标题",
+    "summary": "摘要",
+    "content": "富文本 HTML",
+    "tags": [],
+    "createdAt": "2026-06-29T00:00:00.000Z"
+  }
+]
 ```
 
-## 使用方式
+`theme` 顶层必须是对象。
 
-```bash
-# 启动服务器
-npm start
-
-# 浏览前台
-open http://localhost:3000
-
-# 管理后台
-open http://localhost:3000/admin.html
-# 密码: zhang
+```json
+{
+  "bgColor": "#fff5f7",
+  "primaryColor": "#ffb0c0",
+  "secondaryColor": "#87ceeb",
+  "cardBg": "rgba(255,255,255,0.6)",
+  "textColor": "#2d2d2d",
+  "textSecondary": "#888888"
+}
 ```
 
-## 数据迁移
+## 维护优化记录
 
-数据已经直接存在 `data/` 目录下，克隆仓库即可。
+2026-06-29 已完成一轮代码维护优化：
 
-如需导出，后台左侧底部有 **📤 导出**（下载 JSON）和 **📥 导入**（从 JSON 恢复）按钮。
+- `public/js/shared.js` 集中管理 Toast、分页、主题变量应用、DOM 查询、数据加载兜底链等通用逻辑。
+- `public/js/admin-list.js` 拆出后台列表搜索和分页逻辑。
+- `public/js/index-player-config.js` 拆出播放器模式配置。
+- 后台登录优先走服务端认证；离线打开 `admin.html` 时才使用本地开发兜底密码。
+- 服务端登录密码、Token 有效期和数据目录支持环境变量配置。
+- 数据写入增加顶层结构校验，避免错误导入破坏前台渲染。
+- 上传保留 base64 data URL 格式，同时增加 MIME 白名单和 20MB 上限。
+- 新增 `check`、`test`、`smoke` 脚本。
+- 新增 Node 内置测试，覆盖数据校验、路径防护、上传拒绝、Token 过期和 API 冒烟。
 
-## 离线开发（不启动服务器时）
+## 后续建议
 
-如果直接双击 HTML 文件打开，系统会自动降级到 `localStorage`：
-
-- `index.html` 从 localStorage 读取数据（如果有缓存）
-- `admin.html` 只能读写 localStorage，无法保存到磁盘文件
-- 图片会降级为 base64 嵌入
-
-## 注意事项
-
-- 图片以文件形式存储在 `data/uploads/`，单图建议不超过 5MB
-- 文章内容为富文本 HTML（由 WYSIWYG 编辑器生成）
-- 代码块使用 Atom One Dark 配色，支持 JS/TS/Python/C++/Java/Go/Rust/C/SQL 等语言
-- 如果修改了 `data/` 目录外的文件（如 `index.html`、`admin.html`），需要重启服务器
-
-## 代码调教
-
-优化代码：优化一下代码，检测项目结构和逻辑，看有没有重复写的地方可以优化，缩减代码，方便未来维护。
-在不理解用户的输入时，或者用户给出的内容不精确时，提出问题，询问用户，之后再实行内容。
+- 继续减少 HTML 字符串中的内联 `style=` 和 `onclick=`，逐步改为 CSS class 与事件委托。
+- 继续拆分 `admin.js` 中的富文本编辑器、上传绑定、主题管理逻辑。
+- 继续拆分 `index.js` 中的文章渲染、搜索、探索页和播放器逻辑。
+- 后续功能优先考虑：草稿/自动保存、图片资源管理、文章 slug/SEO、备份恢复。

@@ -36,6 +36,101 @@
     localStorage.setItem(STORE_KEY, JSON.stringify(store));
   }
 
+  function $(selector, root = document) {
+    return root.querySelector(selector);
+  }
+
+  function $all(selector, root = document) {
+    return Array.from(root.querySelectorAll(selector));
+  }
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function createToast(id = 'homeToast') {
+    const el = document.createElement('div');
+    el.id = id;
+    el.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 24px;border-radius:12px;background:var(--card-bg);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,0.12);font-size:14px;border:1px solid rgba(255,255,255,0.3);transition:opacity 0.3s;';
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function showToast(msg, type = 'success', opts = {}) {
+    const id = opts.id || 'toast';
+    const fallbackId = opts.fallbackId || 'homeToast';
+    const existing = byId(id);
+    const toast = existing || byId(fallbackId) || createToast(fallbackId);
+
+    toast.textContent = msg;
+    if (existing) {
+      toast.className = `toast ${type || 'success'}`;
+    }
+    toast.style.display = 'block';
+    toast.style.opacity = '1';
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 300);
+    }, opts.duration || 2500);
+  }
+
+  function renderPagination(page, totalPages, onChange) {
+    if (totalPages <= 1) return '';
+    return `<div class="pagination">
+    <button class="page-btn" onclick="${onChange}(${page - 1})" ${page <= 1 ? 'disabled' : ''}>← 上一页</button>
+    <span class="page-info">${page} / ${totalPages}</span>
+    <button class="page-btn" onclick="${onChange}(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>下一页 →</button>
+  </div>`;
+  }
+
+  function applyThemeVariables(theme = {}, root = document.documentElement) {
+    const styles = root.style;
+    const mapping = {
+      bgColor: '--bg',
+      primaryColor: '--primary',
+      secondaryColor: '--secondary',
+      cardBg: '--card-bg',
+      textColor: '--text',
+      textSecondary: '--text-secondary',
+    };
+
+    for (const [key, variable] of Object.entries(mapping)) {
+      if (theme[key]) styles.setProperty(variable, theme[key]);
+    }
+  }
+
+  async function loadDataWithFallback(types = ['articles', 'updates', 'explores', 'music', 'theme']) {
+    const sources = [
+      async () => {
+        const res = await fetch('/api/data');
+        if (!res.ok) throw new Error('API offline');
+        return res.json();
+      },
+      () => loadStore(),
+      async () => {
+        const data = {};
+        for (const key of types) {
+          const res = await fetch(`data/${key}.json`);
+          if (res.ok) data[key] = await res.json();
+        }
+        if (!data.articles) throw new Error('No seed data');
+        return data;
+      },
+    ];
+
+    for (const source of sources) {
+      try {
+        const data = await source();
+        if (data) return data;
+      } catch {}
+    }
+
+    return null;
+  }
+
   async function syncToServer(type, data, token) {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
@@ -46,7 +141,9 @@
     });
 
     if (!res.ok) {
-      throw new Error(`Failed to sync ${type} (${res.status})`);
+      const error = new Error(`Failed to sync ${type} (${res.status})`);
+      error.status = res.status;
+      throw error;
     }
   }
 
@@ -113,7 +210,11 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     });
-    if (!res.ok) throw new Error('登录失败');
+    if (!res.ok) {
+      const error = new Error('登录失败');
+      error.status = res.status;
+      throw error;
+    }
     const data = await res.json();
     return data.token;
   }
@@ -143,6 +244,13 @@
     loadStore,
     loadStoreOrDefault,
     saveStore,
+    $,
+    $all,
+    byId,
+    showToast,
+    renderPagination,
+    applyThemeVariables,
+    loadDataWithFallback,
     syncToServer,
     escapeHtml,
     truncate,

@@ -2,19 +2,34 @@ const crypto = require('crypto');
 const { readAllData, readData, writeData, isDataType } = require('./data-store');
 const { parseBody, sendJSON, sendError } = require('./http-utils');
 const { saveDataUrl } = require('./upload-store');
+const { ADMIN_PASSWORD, TOKEN_TTL_MS } = require('./config');
 
 // ===== 简单内存 Token 认证 =====
-const PASSWORD = 'zhang';
 let currentToken = null;
 
 function generateToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+function createSession(ttlMs = TOKEN_TTL_MS) {
+  currentToken = {
+    value: generateToken(),
+    expiresAt: Date.now() + ttlMs,
+  };
+  return currentToken;
+}
+
+function clearExpiredToken() {
+  if (currentToken && currentToken.expiresAt <= Date.now()) {
+    currentToken = null;
+  }
+}
+
 function requireAuth(req) {
+  clearExpiredToken();
   if (!currentToken) return false;
   const auth = req.headers['authorization'] || '';
-  return auth === `Bearer ${currentToken}`;
+  return auth === `Bearer ${currentToken.value}`;
 }
 
 function getSiteUrl(req) {
@@ -55,9 +70,9 @@ async function handleApi(req, res) {
   // 登录
   if (req.method === 'POST' && pathname === '/api/login') {
     const body = await parseBody(req);
-    if (body && body.password === PASSWORD) {
-      currentToken = generateToken();
-      sendJSON(res, 200, { ok: true, token: currentToken });
+    if (body && body.password === ADMIN_PASSWORD) {
+      const session = createSession();
+      sendJSON(res, 200, { ok: true, token: session.value, expiresAt: session.expiresAt });
     } else {
       sendError(res, 401, '密码错误');
     }
@@ -128,8 +143,14 @@ async function handleDataRequest(req, res, type) {
       sendError(res, 401, 'Unauthorized');
       return true;
     }
-    const body = await parseBody(req);
-    writeData(type, body);
+    let body;
+    try {
+      body = await parseBody(req);
+      writeData(type, body);
+    } catch (error) {
+      sendError(res, 400, error.message || 'Invalid data');
+      return true;
+    }
     sendJSON(res, 200, { ok: true, type, message: `${type}.json saved` });
     return true;
   }
@@ -148,7 +169,13 @@ async function handleUpload(req, res) {
     sendError(res, 400, 'Missing file field');
     return true;
   }
-  const file = saveDataUrl(body.file);
+  let file;
+  try {
+    file = saveDataUrl(body.file);
+  } catch (error) {
+    sendError(res, 400, error.message || 'Invalid upload');
+    return true;
+  }
   sendJSON(res, 200, { ok: true, ...file });
   return true;
 }
@@ -229,4 +256,8 @@ function writeXML(res, xml) {
   res.end(xml);
 }
 
-module.exports = { handleApi };
+module.exports = {
+  createSession,
+  requireAuth,
+  handleApi,
+};

@@ -72,5 +72,6 @@ function serveStatic(req, res) {
 }
 
 module.exports = {
+  resolveStaticPath,
   serveStatic,
 };

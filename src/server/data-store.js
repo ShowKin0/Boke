@@ -31,6 +31,36 @@ function readJSON(filePath, fallback = null) {
   }
 }
 
+function assertPlainObject(value, label) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+}
+
+function assertArrayOfObjects(value, label) {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
+  }
+
+  for (const [index, item] of value.entries()) {
+    assertPlainObject(item, `${label}[${index}]`);
+  }
+}
+
+function validateData(type, data) {
+  if (!isDataType(type)) {
+    throw new Error(`Unknown data type: ${type}`);
+  }
+
+  if (type === 'theme') {
+    assertPlainObject(data, type);
+    return true;
+  }
+
+  assertArrayOfObjects(data, type);
+  return true;
+}
+
 function writeJSON(filePath, data) {
   const tmpPath = `${filePath}.tmp`;
   fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
@@ -44,6 +74,7 @@ function readData(type) {
 
 function writeData(type, data) {
   if (!isDataType(type)) return false;
+  validateData(type, data);
   writeJSON(getDataPath(type), data);
   return true;
 }
@@ -59,6 +90,7 @@ function readAllData() {
 module.exports = {
   ensureDataFiles,
   isDataType,
+  validateData,
   readData,
   writeData,
   readAllData,
